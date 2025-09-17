@@ -9,7 +9,7 @@
   AFRAME.registerComponent('controller-grab', {
     schema: {
       hand: { type: 'string', default: 'right' },
-      radius: { type: 'number', default: 0.3 } // proximity sphere radius
+  radius: { type: 'number', default: 0.35 } // proximity sphere radius
     },
     init: function(){
       this.grabbed = null;        // grabbed entity
@@ -26,13 +26,25 @@
       this.sphere.setAttribute('visible', false);
       this.el.appendChild(this.sphere);
 
-      // Button bindings: grip/trigger/select
+  // Button bindings: grip/trigger/select
       this._onGrip = ()=> this.tryGrab();
       this._onGripUp = ()=> this.release();
       this._onTrigger = ()=> this.tryGrab();
       this._onTriggerUp = ()=> this.release();
       this._onSelect = ()=> this.tryGrab();
       this._onSelectEnd = ()=> this.release();
+      // Hover feedback using raycaster-intersection
+      this._hovered = null;
+      this.el.addEventListener('raycaster-intersection', (e)=>{
+        const it = e.detail.els && e.detail.els[0];
+        if (it && it.classList && it.classList.contains('grabbable')) {
+          if (this._hovered && this._hovered !== it) this._clearHighlight(this._hovered);
+          this._hovered = it; this._setHighlight(it, true);
+        }
+      });
+      this.el.addEventListener('raycaster-intersection-cleared', (e)=>{
+        if (this._hovered) { this._clearHighlight(this._hovered); this._hovered = null; }
+      });
 
       this.el.addEventListener('gripdown', this._onGrip);
       this.el.addEventListener('gripup', this._onGripUp);
@@ -54,16 +66,16 @@
       this.el.removeEventListener('selectend', this._onSelectEnd);
     },
     tick: function(time, dt){
-      // If holding an object, update its transform to match hand
+  // If holding an object, update its transform to match hand (keeping initial offset)
       if(!this.grabbed) return;
       const hand = this.el.object3D;
       const obj = this.grabbed.object3D;
-      // World pose of hand
-      const handPos = hand.getWorldPosition(tmpV3);
-      const handQuat = hand.getWorldQuaternion(tmpQ);
-      // Apply offset captured at grab time: obj = hand * offset
-      obj.position.copy(handPos);
-      obj.quaternion.copy(handQuat);
+  // World pose of hand
+  const handPos = hand.getWorldPosition(tmpV3);
+  const handQuat = hand.getWorldQuaternion(tmpQ);
+  // Apply offset captured at grab time: obj = hand * offset
+  obj.position.copy(handPos).add(this.offsetPos.clone().applyQuaternion(handQuat));
+  obj.quaternion.copy(handQuat).multiply(this.offsetQuat);
       obj.updateMatrixWorld();
     },
     tryGrab: function(){
@@ -78,9 +90,12 @@
         this._lastScan = now;
       }
 
-      // Find closest grabbable within radius
+  // If raycaster hits a grabbable, prefer it
+  let best = this._hovered && this._hovered.classList.contains('grabbable') ? this._hovered : null;
+
+  // Find closest grabbable within radius (near grab)
       const grabbables = this._grabbables;
-      let best = null, bestDist2 = Infinity;
+  let bestDist2 = Infinity;
       for(const g of grabbables){
         const obj = g.object3D;
         if(!obj) continue;
@@ -92,12 +107,22 @@
       }
       if(!best) return;
 
-      // Remember original dynamic-body config (if any)
-      this.origBody = best.getAttribute('dynamic-body');
+  // Remember original dynamic-body config (if any)
+  this.origBody = best.getAttribute('dynamic-body');
 
-      // Switch to kinematic to follow hand cleanly
-      if (best.hasAttribute('dynamic-body')) best.removeAttribute('dynamic-body');
-      best.setAttribute('kinematic-body', '');
+  // Compute initial offset between hand and object
+  const hand = this.el.object3D;
+  const obj = best.object3D;
+  const handQuat = hand.getWorldQuaternion(new THREE.Quaternion());
+  const invHandQuat = handQuat.clone().invert();
+  const objPos = obj.getWorldPosition(new THREE.Vector3());
+  const objQuat = obj.getWorldQuaternion(new THREE.Quaternion());
+  this.offsetPos.copy(objPos.sub(hand.getWorldPosition(new THREE.Vector3()))).applyQuaternion(invHandQuat);
+  this.offsetQuat.copy(invHandQuat.multiply(objQuat));
+
+  // Switch to kinematic to follow hand cleanly
+  if (best.hasAttribute('dynamic-body')) best.removeAttribute('dynamic-body');
+  best.setAttribute('kinematic-body', '');
       this.grabbed = best;
     },
     release: function(){
@@ -113,5 +138,15 @@
       this.grabbed = null;
       this.origBody = null;
     }
+    ,_setHighlight: function(el, on){
+      if(!el) return;
+      if (on) {
+        if (!el.dataset.origColor) el.dataset.origColor = el.getAttribute('color');
+        el.setAttribute('color', '#FFFF88');
+      } else {
+        el.setAttribute('color', el.dataset.origColor || '#FFFFFF');
+      }
+    }
+    ,_clearHighlight: function(el){ this._setHighlight(el, false); }
   });
 })();

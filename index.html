@@ -19,30 +19,31 @@
   <body>
   <div class="hud">Joystick gauche: déplacement | Joystick droit: rotation | Clavier: ZQSD/WASD + souris<br><span id="dbg"></span></div>
 
-  <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
+  <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81; broadphase: SAP; allowSleep: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
       <!-- LUMIÈRES -->
   <a-entity light="type: ambient; color: #BBB; intensity: 0.4"></a-entity>
   <a-entity id="dirLight" position="2 4 1" light="type: directional; color: #fff; intensity: 1.0; castShadow: true; shadowCameraVisible: false"></a-entity>
 
       <!-- SOL -->
-  <a-plane rotation="-90 0 0" width="40" height="40" color="#556" material="metalness: 0.2; roughness: 0.8" shadow="receive: true" static-body></a-plane>
+  <!-- SOL solide (box) pour éviter les traversées -->
+  <a-box position="0 -0.05 0" width="40" depth="40" height="0.1" color="#556" material="metalness: 0.2; roughness: 0.8" shadow="receive: true" static-body="shape: box; friction: 0.6; restitution: 0"></a-box>
 
       <!-- OBJETS 3D -->
-  <a-box id="cube" class="grabbable" position="-1 1.2 -3" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1"></a-box>
-  <a-sphere id="sphere" class="grabbable" position="1 1.75 -3" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" dynamic-body="shape: sphere; mass: 1"></a-sphere>
-  <a-cylinder class="grabbable" position="0 1.25 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: cylinder; mass: 1"></a-cylinder>
+  <a-box id="cube" class="grabbable" position="-1 1.6 -3" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1"></a-box>
+  <a-sphere id="sphere" class="grabbable" position="1 2.2 -3" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" dynamic-body="shape: sphere; mass: 1"></a-sphere>
+  <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
 
   <!-- RIG + CAMÉRA + CONTRÔLEURS -->
   <a-entity id="rig" position="0 1.6 3" thumbstick-move-rotate>
   <a-entity id="head" position="0 0 0" camera look-controls="pointerLockEnabled: false" wasd-controls-enabled="false"></a-entity>
 
   <!-- Contrôleur gauche (Quest 3) -->
-  <a-entity id="leftHand" laser-controls="hand: left" controller-grab="hand: left; radius: 0.35">
+  <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .grabbable; far: 10" controller-grab="hand: left; radius: 0.35">
     <a-sphere radius="0.02" color="#66ccff"></a-sphere>
   </a-entity>
 
   <!-- Contrôleur droit (Quest 3) -->
-  <a-entity id="rightHand" laser-controls="hand: right" controller-grab="hand: right; radius: 0.35">
+  <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .grabbable; far: 10" controller-grab="hand: right; radius: 0.35">
     <a-sphere radius="0.02" color="#ff9966"></a-sphere>
   </a-entity>
       </a-entity>
