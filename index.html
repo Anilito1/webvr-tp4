@@ -10,6 +10,10 @@
   <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
     <script src="./src/controls.js"></script>
   <script src="./src/grabber.js"></script>
+    <script src="./src/gun.js"></script>
+    <a-assets>
+      <a-asset-item id="pistol" src="./assets/pistol.glb"></a-asset-item>
+    </a-assets>
     <style>
       html, body { height: 100%; margin: 0; }
       .hud { position: absolute; top: 8px; left: 8px; color: white; font-family: sans-serif; z-index: 10; }
@@ -32,6 +36,11 @@
   <a-box id="cube" class="grabbable" position="-1 1.6 -3" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1"></a-box>
   <a-sphere id="sphere" class="grabbable" position="1 2.2 -3" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" dynamic-body="shape: sphere; mass: 1"></a-sphere>
   <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
+
+      <!-- Arme GLB -->
+      <a-entity id="gun" class="grabbable" position="0 1.1 -2" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12" dynamic-body="shape: box; mass: 0.5">
+        <a-entity gltf-model="#pistol" scale="0.6 0.6 0.6" rotation="0 90 0"></a-entity>
+      </a-entity>
 
   <!-- RIG + CAMÉRA + CONTRÔLEURS -->
   <a-entity id="rig" position="0 1.6 3" thumbstick-move-rotate>

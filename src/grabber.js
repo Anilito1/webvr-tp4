@@ -12,7 +12,8 @@
   radius: { type: 'number', default: 0.35 } // proximity sphere radius
     },
     init: function(){
-      this.grabbed = null;        // grabbed entity
+  this.grabbed = null;        // grabbed entity
+  this.holdingHand = null;    // controller entity currently holding
       this.origBody = null;       // remember original dynamic-body config
       this.offsetPos = new THREE.Vector3();
       this.offsetQuat = new THREE.Quaternion();
@@ -68,7 +69,7 @@
     tick: function(time, dt){
   // If holding an object, update its transform to match hand (keeping initial offset)
       if(!this.grabbed) return;
-      const hand = this.el.object3D;
+  const hand = this.el.object3D;
       const obj = this.grabbed.object3D;
   // World pose of hand
   const handPos = hand.getWorldPosition(tmpV3);
@@ -123,11 +124,14 @@
   // Switch to kinematic to follow hand cleanly
   if (best.hasAttribute('dynamic-body')) best.removeAttribute('dynamic-body');
   best.setAttribute('kinematic-body', '');
-      this.grabbed = best;
+  this.grabbed = best;
+  this.holdingHand = this.el;
+  // Notify the grabbed entity who is holding it
+  this.grabbed.emit('grab-start', { handEl: this.el }, false);
     },
     release: function(){
       if(!this.grabbed) return;
-      const g = this.grabbed;
+  const g = this.grabbed;
       // Return to dynamic body so it falls
       g.removeAttribute('kinematic-body');
       if (this.origBody) {
@@ -135,7 +139,10 @@
       } else {
         g.setAttribute('dynamic-body', 'mass: 1');
       }
-      this.grabbed = null;
+  // Notify release
+  g.emit('grab-end', { handEl: this.holdingHand }, false);
+  this.grabbed = null;
+  this.holdingHand = null;
       this.origBody = null;
     }
     ,_setHighlight: function(el, on){

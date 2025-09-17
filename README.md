@@ -34,5 +34,27 @@ Alternatives :
 
 ## Prochaines étapes (TP)
 - Ex. 2 : matériaux/Textures et interactions.
-- Ex. 3 : téléportation / navmesh.
+- Ex. 3 : arme VR (tir de projectiles).
+
+## Exercice 3 — Arme VR
+- L’arme est un entity `#gun` avec le composant `vr-gun`.
+- Saisie: via `controller-grab` (grip/trigger/select/squeeze). L’arme suit la main (cinématique) et redevient dynamique à la relâche.
+- Tir: quand elle est tenue, appuyer sur la gâchette (ou select) du contrôleur pour créer une balle (`a-sphere`) avec `dynamic-body` et une vitesse initiale.
+- Paramètres:
+  - `vr-gun="speed: 10; projectileRadius: 0.05; life: 4"`
+  - `muzzleOffset` décale la sortie du canon (par défaut le -Z de l’arme).
+
+### Ajouter un vrai modèle 3D (optionnel)
+Fichier recommandé: `.glb` (glTF binaire)
+- Taille < 5 Mo si possible (optimisé), matériaux PBR simples.
+- Unités: mètres. Orientation: avant = -Z, haut = +Y. Origine au niveau de la poignée.
+- Idéal: un empty/locator nommé `muzzle` en bout de canon (avant -Z) pour le tir.
+
+Intégration:
+1. Placez `gun.glb` dans un dossier `assets/`.
+2. Dans `index.html`, ajoutez dans `<a-assets>`:
+	`<a-asset-item id="gunModel" src="./assets/gun.glb"></a-asset-item>`
+3. Remplacez le contenu de `#gun` par:
+	`<a-entity gltf-model="#gunModel" scale="1 1 1"></a-entity>`
+4. Ajustez `muzzleOffset` si pas de locator.
 - Ex. 4 : optimisation et post-process.
