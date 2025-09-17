@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TP4 - WebVR - Exercice 1</title>
+    <!-- A-Frame stable -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="./src/controls.js"></script>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      .hud { position: absolute; top: 8px; left: 8px; color: white; font-family: sans-serif; z-index: 10; }
+      .hud code { background: rgba(0,0,0,.35); padding: 2px 6px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+  <div class="hud">Joystick gauche: déplacement | Joystick droit: rotation | Clavier: ZQSD/WASD + souris<br><span id="dbg"></span></div>
+
+  <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #7aaaff" fog="type: exponential; color: #7aaaff; density: 0.005">
+      <!-- LUMIÈRES -->
+  <a-entity light="type: ambient; color: #ffffff; intensity: 0.8"></a-entity>
+  <a-entity id="dirLight" position="2 6 3" light="type: directional; color: #ffffff; intensity: 1.2; castShadow: true; shadowCameraVisible: false"></a-entity>
+
+      <!-- SOL -->
+  <a-plane rotation="-90 0 0" width="40" height="40" color="#6a6" material="metalness: 0.1; roughness: 0.9" shadow="receive: true"></a-plane>
+
+      <!-- OBJETS 3D -->
+      <a-box id="cube" position="-1 0.5 -3" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true"></a-box>
+      <a-sphere id="sphere" position="1 1.25 -3" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true"></a-sphere>
+      <a-cylinder position="0 0.75 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true"></a-cylinder>
+
+  <!-- RIG + CAMÉRA + CONTRÔLEURS -->
+  <a-entity id="rig" position="0 1.6 3" thumbstick-move-rotate>
+  <a-entity id="head" position="0 0 0" camera look-controls="pointerLockEnabled: false" wasd-controls-enabled="false"></a-entity>
+
+  <!-- Contrôleur gauche (Quest 3) -->
+  <a-entity id="leftHand" oculus-touch-controls="hand: left" ></a-entity>
+
+  <!-- Contrôleur droit (Quest 3) -->
+  <a-entity id="rightHand" oculus-touch-controls="hand: right" ></a-entity>
+      </a-entity>
+
+      <!-- SKY -->
+  <a-sky color="#8ab"></a-sky>
+    </a-scene>
+    <script>
+      const scene = document.getElementById('scene');
+      const params = new URLSearchParams(location.search);
+      const safe = params.get('safe') === '1';
+      if (safe) {
+        // Disable heavy effects in safe mode
+        scene.setAttribute('fog', 'enabled: false');
+        scene.setAttribute('renderer', 'shadowMap.enabled: false');
+        const dl = document.getElementById('dirLight');
+        if (dl) dl.setAttribute('light', 'castShadow: false');
+        const dbg = document.getElementById('dbg');
+        if (dbg) dbg.style.display = 'none';
+      }
+      scene.addEventListener('enter-vr', ()=>{
+        console.log('[VR] enter-vr');
+      });
+      scene.addEventListener('loaded', ()=>{
+        console.log('[Scene] loaded');
+      });
+    </script>
+  </body>
+</html>
