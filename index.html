@@ -11,6 +11,7 @@
     <script src="./src/controls.js"></script>
   <script src="./src/grabber.js"></script>
     <script src="./src/gun.js"></script>
+  <script src="./src/targets.js"></script>
     <a-assets>
       <a-asset-item id="pistol" src="./assets/pistol.glb"></a-asset-item>
     </a-assets>
@@ -21,7 +22,7 @@
     </style>
   </head>
   <body>
-  <div class="hud">Joystick gauche: déplacement | Joystick droit: rotation | Clavier: ZQSD/WASD + souris<br><span id="dbg"></span></div>
+  <div class="hud">Joystick gauche: déplacement | Joystick droit: rotation | Clavier: ZQSD/WASD + souris | Desktop: E prendre/poser, Clic gauche tirer<br><span id="dbg"></span></div>
 
   <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81; broadphase: SAP; allowSleep: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
       <!-- LUMIÈRES -->
@@ -33,14 +34,18 @@
   <a-box position="0 -0.05 0" width="40" depth="40" height="0.1" color="#556" material="metalness: 0.2; roughness: 0.8" shadow="receive: true" static-body="shape: box; friction: 0.6; restitution: 0"></a-box>
 
       <!-- OBJETS 3D -->
-  <a-box id="cube" class="grabbable" position="-1 1.6 -3" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1"></a-box>
-  <a-sphere id="sphere" class="grabbable" position="1 2.2 -3" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" dynamic-body="shape: sphere; mass: 1"></a-sphere>
+  <!-- Cibles fixes supplémentaires: carré et rond du début -->
+  <a-box id="cube" class="target" position="-3 1.2 -6" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" static-body="shape: box" target-hit></a-box>
+  <a-sphere id="sphere" class="target" position="3 1.75 -6" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" static-body="shape: sphere" target-hit></a-sphere>
   <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
 
-      <!-- Arme GLB -->
-      <a-entity id="gun" class="grabbable" position="0 1.1 -2" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12" dynamic-body="shape: box; mass: 0.5">
+  <!-- Arme GLB (proche du joueur) -->
+  <a-entity id="gun" class="grabbable" position="0.35 1.2 2.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12" dynamic-body="shape: box; mass: 0.5">
         <a-entity gltf-model="#pistol" scale="0.6 0.6 0.6" rotation="0 90 0"></a-entity>
       </a-entity>
+
+  <!-- Spawner de cibles (mêmes emplacements à chaque vague) -->
+  <a-entity id="targetsRoot" position="0 0 0" target-spawner="delay: 3000; slots: -4 1.2 -8, -2 1.2 -8, 0 1.2 -8, 2 1.2 -8, 4 1.2 -8, -3 2.2 -10, -1 2.2 -10, 1 2.2 -10, 3 2.2 -10"></a-entity>
 
   <!-- RIG + CAMÉRA + CONTRÔLEURS -->
   <a-entity id="rig" position="0 1.6 3" thumbstick-move-rotate>
