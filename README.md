@@ -20,12 +20,15 @@ Alternatives :
 - Joystick gauche : avancer/reculer/gauche/droite
 - Joystick droit : rotation de la vue
 - Clavier (fallback) : ZQSD / WASD + flèches gauche/droite pour pivoter
+- VR Grabbing : maintenez Grip ou Trigger pour saisir un objet proche, relâchez pour le lâcher (l’objet tombe avec la gravité)
 - Souris : look-controls (quand non VR)
 
 ## Notes techniques
 - `thumbstick-move-rotate` est un composant custom (voir `src/controls.js`).
 - Ombres activées sur la lumière directionnelle et les objets (`shadow`).
 - Renderer : `physicallyCorrectLights: true` pour un éclairage plus réaliste.
+- Physique : `aframe-physics-system` (cannon-es). Le sol a `static-body` et les objets grabbables ont `dynamic-body`.
+- Grabbing : `controller-grab` (voir `src/grabber.js`) créé un verrou "lock" pendant la saisie, puis l’objet redevient libre à la relâche.
 
 ## Prochaines étapes (TP)
 - Ex. 2 : matériaux/Textures et interactions.
