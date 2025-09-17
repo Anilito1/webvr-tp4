@@ -16,6 +16,8 @@
       this.origBody = null;       // remember original dynamic-body config
       this.offsetPos = new THREE.Vector3();
       this.offsetQuat = new THREE.Quaternion();
+  this._grabbables = Array.from(this.el.sceneEl.querySelectorAll('.grabbable'));
+  this._lastScan = 0;
 
       // Collider helper
       this.sphere = document.createElement('a-sphere');
@@ -51,7 +53,7 @@
       this.el.removeEventListener('selectstart', this._onSelect);
       this.el.removeEventListener('selectend', this._onSelectEnd);
     },
-    tick: function(){
+    tick: function(time, dt){
       // If holding an object, update its transform to match hand
       if(!this.grabbed) return;
       const hand = this.el.object3D;
@@ -69,8 +71,15 @@
       const handObj = this.el.object3D;
       const handPos = handObj.getWorldPosition(tmpV3);
 
+      // Occasionally rescan grabbables (in case scene changed)
+      const now = performance.now();
+      if (now - this._lastScan > 1000) {
+        this._grabbables = Array.from(this.el.sceneEl.querySelectorAll('.grabbable'));
+        this._lastScan = now;
+      }
+
       // Find closest grabbable within radius
-      const grabbables = this.el.sceneEl.querySelectorAll('.grabbable');
+      const grabbables = this._grabbables;
       let best = null, bestDist2 = Infinity;
       for(const g of grabbables){
         const obj = g.object3D;

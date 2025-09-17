@@ -29,6 +29,8 @@ Alternatives :
 - Renderer : `physicallyCorrectLights: true` pour un éclairage plus réaliste.
 - Physique : `aframe-physics-system` (cannon-es). Le sol a `static-body` et les objets grabbables ont `dynamic-body`.
 - Grabbing : `controller-grab` (voir `src/grabber.js`) créé un verrou "lock" pendant la saisie, puis l’objet redevient libre à la relâche.
+- Contrôleurs : on utilise `laser-controls` (plus simple/fiable multi-headsets). Si besoin de modèles de main, on peut réactiver `oculus-touch-controls`.
+- Dépannage : ajoutez `?safe=1` à l’URL pour désactiver ombres/fog/HUD si la page gèle à l’entrée VR.
 
 ## Prochaines étapes (TP)
 - Ex. 2 : matériaux/Textures et interactions.
