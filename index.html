@@ -49,7 +49,7 @@
 
   <!-- RIG + CAMÉRA + CONTRÔLEURS -->
   <a-entity id="rig" position="0 1.6 3" thumbstick-move-rotate>
-  <a-entity id="head" position="0 0 0" camera look-controls="pointerLockEnabled: false" wasd-controls-enabled="false"></a-entity>
+  <a-entity id="head" position="0 0 0" camera="near: 0.01" look-controls="pointerLockEnabled: false" wasd-controls-enabled="false"></a-entity>
 
   <!-- Contrôleur gauche (Quest 3) -->
   <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .grabbable; far: 10" controller-grab="hand: left; radius: 0.35">

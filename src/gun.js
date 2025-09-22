@@ -12,9 +12,10 @@
       speed: { type: 'number', default: 10 },
       life: { type: 'number', default: 4 },
       // Desktop (non-VR) handling
-      pickupDistance: { type: 'number', default: 1.5 },
-      desktopHoldOffset: { type: 'vec3', default: {x: 0.25, y: -0.15, z: -0.5} },
-      desktopHoldRotation: { type: 'vec3', default: {x: 0, y: 90, z: 0} }
+  pickupDistance: { type: 'number', default: 1.5 },
+  // Tuned so the weapon sits bottom-right and fully visible in desktop mode
+  desktopHoldOffset: { type: 'vec3', default: {x: 0.18, y: -0.12, z: -0.6} },
+  desktopHoldRotation: { type: 'vec3', default: {x: 0, y: 0, z: 0} }
     },
     init: function(){
       this.holdingHand = null;
@@ -102,6 +103,8 @@
       head.appendChild(this.el);
       this.el.setAttribute('position', `${this.data.desktopHoldOffset.x} ${this.data.desktopHoldOffset.y} ${this.data.desktopHoldOffset.z}`);
       this.el.setAttribute('rotation', `${this.data.desktopHoldRotation.x} ${this.data.desktopHoldRotation.y} ${this.data.desktopHoldRotation.z}`);
+      // Make sure it's visible and not culled
+      this._ensureVisible();
       this.desktopHeld = true;
     },
     _desktopDrop: function(){
@@ -137,6 +140,13 @@
         this.el.setAttribute('dynamic-body', 'shape: box; mass: 0.5');
       }
       this.desktopHeld = false;
+    },
+    _ensureVisible: function(){
+      // Ensure the gun and its children are visible and not frustum-culled when parented to camera
+      const o = this.el.object3D;
+      if (!o) return;
+      o.visible = true;
+      o.traverse((n)=>{ n.visible = true; n.frustumCulled = false; });
     },
     fire: function(){
       // Muzzle world pose
