@@ -203,18 +203,14 @@
       p.setAttribute('position', `${muzzleWorld.x} ${muzzleWorld.y} ${muzzleWorld.z}`);
   p.setAttribute('shadow', 'cast: true; receive: false');
   p.setAttribute('material', 'emissive: #ffaa00; emissiveIntensity: 0.6');
+      const sceneRoot = this.el.sceneEl || document.querySelector('a-scene');
+      sceneRoot.appendChild(p);
       p.setAttribute('dynamic-body', 'shape: sphere; mass: 0.1; linearDamping: 0.01; angularDamping: 0.01');
-  const sceneRoot = this.el.sceneEl || document.querySelector('a-scene');
-  sceneRoot.appendChild(p);
-
-      // Apply initial velocity via component attribute to avoid timing issues
+      // Set initial velocity once the body is ready
       const speed = this.data.speed;
-      const vx = dir.x * speed, vy = dir.y * speed, vz = dir.z * speed;
-      // Let physics attach this frame, then set velocity attribute
-      setTimeout(()=>{
-        try { p.setAttribute('dynamic-body', 'shape: sphere; mass: 0.1; linearDamping: 0.01; angularDamping: 0.01'); } catch(e){}
-        try { p.setAttribute('velocity', `${vx} ${vy} ${vz}`); } catch(e){}
-      }, 0);
+      p.addEventListener('body-loaded', ()=>{
+        try { p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed); } catch(e){}
+      });
 
       // Cleanup after life
       setTimeout(()=>{ if (p && p.parentNode) p.parentNode.removeChild(p); }, this.data.life * 1000);

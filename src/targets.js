@@ -44,12 +44,15 @@
         const t = document.createElement('a-entity');
         t.setAttribute('class', 'target');
         t.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
-        // Alternate shapes/colors
+        // Build geometry on the same entity so physics sees the mesh
         if (i % 2 === 0){
-          t.innerHTML = '<a-box depth="0.5" height="0.5" width="0.5" color="#aa3333" shadow="cast: true; receive: true"></a-box>';
+          t.setAttribute('geometry', 'primitive: box; depth: 0.5; height: 0.5; width: 0.5');
+          t.setAttribute('material', 'color: #aa3333');
         } else {
-          t.innerHTML = '<a-cone height="0.7" radius-bottom="0.3" color="#33aa33" shadow="cast: true; receive: true"></a-cone>';
+          t.setAttribute('geometry', 'primitive: cone; height: 0.7; radiusBottom: 0.3; radiusTop: 0');
+          t.setAttribute('material', 'color: #33aa33');
         }
+        t.setAttribute('shadow', 'cast: true; receive: true');
         t.setAttribute('static-body', 'shape: box');
         t.setAttribute('target-hit', '');
         this.el.appendChild(t);

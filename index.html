@@ -12,9 +12,6 @@
   <script src="./src/grabber.js"></script>
     <script src="./src/gun.js"></script>
   <script src="./src/targets.js"></script>
-    <a-assets>
-      <a-asset-item id="pistol" src="./assets/pistol.glb"></a-asset-item>
-    </a-assets>
     <style>
       html, body { height: 100%; margin: 0; }
       .hud { position: absolute; top: 8px; left: 8px; color: white; font-family: sans-serif; z-index: 10; }
@@ -41,7 +38,7 @@
 
   <!-- Arme GLB (proche du joueur) -->
   <a-entity id="gun" class="grabbable" position="0.3 1.4 -0.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12" dynamic-body="shape: box; mass: 0.5">
-  <a-entity gltf-model="#pistol" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
+    <a-entity gltf-model="url(./assets/pistol.glb)" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
       </a-entity>
 
   <!-- Spawner de cibles (mêmes emplacements à chaque vague) -->
