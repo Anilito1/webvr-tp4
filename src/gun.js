@@ -15,7 +15,9 @@
   pickupDistance: { type: 'number', default: 1.5 },
   // Tuned so the weapon sits bottom-right and fully visible in desktop mode
   desktopHoldOffset: { type: 'vec3', default: {x: 0.18, y: -0.12, z: -0.6} },
-  desktopHoldRotation: { type: 'vec3', default: {x: 0, y: 0, z: 0} }
+      desktopHoldRotation: { type: 'vec3', default: {x: 0, y: 0, z: 0} },
+      autoDesktopPickup: { type: 'boolean', default: true },
+      autoPickupDistance: { type: 'number', default: 3.0 }
     },
     init: function(){
       this.holdingHand = null;
@@ -49,7 +51,10 @@
         if (this.desktopHeld) {
           this._desktopDrop();
         } else {
-          this._desktopTryPickup();
+          // Try normal pickup, then extend reach if needed
+          if (!this._desktopTryPickup()) {
+            this._desktopTryPickup(this.data.autoPickupDistance);
+          }
         }
       };
       this._onMouseDown = (ev)=>{
@@ -61,6 +66,15 @@
       };
       window.addEventListener('keydown', this._onKeyDown);
       window.addEventListener('mousedown', this._onMouseDown);
+
+      // Auto-pickup on desktop shortly after load to ensure visibility
+      setTimeout(()=>{
+        const scene = this.el.sceneEl;
+        const inVR = scene && scene.is('vr-mode');
+        if (!inVR && this.data.autoDesktopPickup && !this.desktopHeld) {
+          this._desktopTryPickup(this.data.autoPickupDistance);
+        }
+      }, 300);
     },
     remove: function(){
       this.el.removeEventListener('grab-start', this._onGrabStart);
@@ -88,15 +102,17 @@
       head.object3D.getWorldPosition(pHead);
       return pGun.distanceTo(pHead);
     },
-    _desktopTryPickup: function(){
-      if (this.desktopHeld) return;
-      if (this._distanceToHead() > this.data.pickupDistance) return;
+    _desktopTryPickup: function(maxDist){
+      if (this.desktopHeld) return true;
+      const allow = (maxDist || this.data.pickupDistance);
+      if (this._distanceToHead() > allow) return false;
       const head = this._getHead();
-      if (!head) return;
+      if (!head) return false;
       // Save physics config and disable physics
       const dyn = this.el.getAttribute('dynamic-body');
       this._savedDyn = dyn ? Object.assign({}, dyn) : null;
-      if (this.el.body) { try { this.el.removeAttribute('dynamic-body'); } catch(e){} }
+      try { this.el.removeAttribute('dynamic-body'); } catch(e){}
+      try { this.el.removeAttribute('kinematic-body'); } catch(e){}
 
       // Reparent to head and set local transform
       this._prevParent = this.el.parentNode;
@@ -106,6 +122,7 @@
       // Make sure it's visible and not culled
       this._ensureVisible();
       this.desktopHeld = true;
+      return true;
     },
     _desktopDrop: function(){
       if (!this.desktopHeld) return;
