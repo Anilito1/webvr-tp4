@@ -59,16 +59,11 @@
       };
       this._onMouseDown = (ev)=>{
         if (ev.button !== 0) return; // left click
-        const scene = this.el.sceneEl;
-        const inVR = scene && scene.is('vr-mode');
-        if (inVR) return;
-        if (this.desktopHeld) this.fire();
+        if (this.desktopHeld) { this.fire(); this._hudFire(); }
       };
       this._onKeyFire = (ev)=>{
         if (ev.code !== 'KeyF') return;
-        const scene = this.el.sceneEl;
-        const inVR = scene && scene.is('vr-mode');
-        if (!inVR && this.desktopHeld) this.fire();
+        if (this.desktopHeld) { this.fire(); this._hudFire(); }
       };
       window.addEventListener('keydown', this._onKeyDown);
       window.addEventListener('mousedown', this._onMouseDown);
@@ -96,6 +91,10 @@
           this._desktopTryPickup(this.data.autoPickupDistance);
         }
       }, 300);
+    },
+    _hudFire: function(){
+      const dbg = document.getElementById('dbg');
+      if (dbg) dbg.textContent = (dbg.textContent + ' | tir').trim();
     },
     remove: function(){
       this.el.removeEventListener('grab-start', this._onGrabStart);
@@ -205,22 +204,30 @@
   p.setAttribute('shadow', 'cast: true; receive: false');
   p.setAttribute('material', 'emissive: #ffaa00; emissiveIntensity: 0.6');
       p.setAttribute('dynamic-body', 'shape: sphere; mass: 0.1; linearDamping: 0.01; angularDamping: 0.01');
-      this.el.sceneEl.appendChild(p);
+  const sceneRoot = this.el.sceneEl || document.querySelector('a-scene');
+  sceneRoot.appendChild(p);
 
-      // Apply initial velocity
-      const body = p.body; // may not exist immediately; defer
-      const applyVel = ()=>{
-        if (p.body){
-          const speed = this.data.speed;
-          p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed);
-        } else {
-          requestAnimationFrame(applyVel);
-        }
-      };
-      requestAnimationFrame(applyVel);
+      // Apply initial velocity via component attribute to avoid timing issues
+      const speed = this.data.speed;
+      const vx = dir.x * speed, vy = dir.y * speed, vz = dir.z * speed;
+      // Let physics attach this frame, then set velocity attribute
+      setTimeout(()=>{
+        try { p.setAttribute('dynamic-body', 'shape: sphere; mass: 0.1; linearDamping: 0.01; angularDamping: 0.01'); } catch(e){}
+        try { p.setAttribute('velocity', `${vx} ${vy} ${vz}`); } catch(e){}
+      }, 0);
 
       // Cleanup after life
       setTimeout(()=>{ if (p && p.parentNode) p.parentNode.removeChild(p); }, this.data.life * 1000);
+
+      // Simple muzzle flash
+      const flash = document.createElement('a-sphere');
+      flash.setAttribute('radius', 0.03);
+      flash.setAttribute('color', '#fff');
+      flash.setAttribute('material', 'emissive: #ffffff; emissiveIntensity: 1.2');
+      flash.setAttribute('position', `${muzzleWorld.x} ${muzzleWorld.y} ${muzzleWorld.z}`);
+  const sceneRoot2 = this.el.sceneEl || document.querySelector('a-scene');
+  sceneRoot2.appendChild(flash);
+      setTimeout(()=>{ if (flash && flash.parentNode) flash.parentNode.removeChild(flash); }, 80);
     }
   });
 })();
