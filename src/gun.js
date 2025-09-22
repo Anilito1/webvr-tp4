@@ -14,7 +14,7 @@
       // Desktop (non-VR) handling
   pickupDistance: { type: 'number', default: 1.5 },
   // Tuned so the weapon sits bottom-right and fully visible in desktop mode
-  desktopHoldOffset: { type: 'vec3', default: {x: 0.22, y: -0.18, z: -0.85} },
+  desktopHoldOffset: { type: 'vec3', default: {x: 0.22, y: -0.14, z: -0.5} },
       desktopHoldRotation: { type: 'vec3', default: {x: 0, y: 0, z: 0} },
       autoDesktopPickup: { type: 'boolean', default: true },
       autoPickupDistance: { type: 'number', default: 3.0 }
@@ -64,16 +64,29 @@
         if (inVR) return;
         if (this.desktopHeld) this.fire();
       };
+      this._onKeyFire = (ev)=>{
+        if (ev.code !== 'KeyF') return;
+        const scene = this.el.sceneEl;
+        const inVR = scene && scene.is('vr-mode');
+        if (!inVR && this.desktopHeld) this.fire();
+      };
       window.addEventListener('keydown', this._onKeyDown);
       window.addEventListener('mousedown', this._onMouseDown);
+      window.addEventListener('keydown', this._onKeyFire);
 
       // If model loads later, re-ensure visibility
+      // Fallback mesh in case model is not yet visible
       const modelEl = this.el.querySelector('[gltf-model]');
-      if (modelEl){
-        modelEl.addEventListener('model-loaded', ()=>{
-          this._ensureVisible();
-        });
-      }
+      this._fallback = document.createElement('a-box');
+      this._fallback.setAttribute('class', 'gun-fallback');
+      this._fallback.setAttribute('depth', 0.3);
+      this._fallback.setAttribute('height', 0.12);
+      this._fallback.setAttribute('width', 0.18);
+      this._fallback.setAttribute('position', '0 0 0');
+      this._fallback.setAttribute('material', 'color: #ffffff; emissive: #888');
+      this.el.appendChild(this._fallback);
+      const hideFallback = ()=>{ if (this._fallback) { this._fallback.setAttribute('visible', 'false'); } };
+      if (modelEl){ modelEl.addEventListener('model-loaded', ()=>{ this._ensureVisible(); hideFallback(); }); }
 
       // Auto-pickup on desktop shortly after load to ensure visibility
       setTimeout(()=>{
@@ -93,6 +106,7 @@
       }
       window.removeEventListener('keydown', this._onKeyDown);
       window.removeEventListener('mousedown', this._onMouseDown);
+      window.removeEventListener('keydown', this._onKeyFire);
     },
     _getHead: function(){
       // Prefer #head if present, else scene camera entity
@@ -130,6 +144,9 @@
       // Make sure it's visible and not culled
       this._ensureVisible();
       this.desktopHeld = true;
+      // Notify HUD
+      const dbg = document.getElementById('dbg');
+      if (dbg) dbg.textContent = (dbg.textContent + ' | [Desktop] Arme prise').trim();
       return true;
     },
     _desktopDrop: function(){
@@ -178,14 +195,15 @@
       const obj = this.el.object3D;
       const muzzleLocal = new THREE.Vector3(this.data.muzzleOffset.x, this.data.muzzleOffset.y, this.data.muzzleOffset.z);
       const muzzleWorld = obj.localToWorld(muzzleLocal.clone());
-      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(obj.getWorldQuaternion(tmpQ)).normalize();
+  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(obj.getWorldQuaternion(tmpQ)).normalize();
 
       // Create projectile
       const p = document.createElement('a-sphere');
       p.setAttribute('radius', this.data.projectileRadius);
       p.setAttribute('color', this.data.projectileColor);
       p.setAttribute('position', `${muzzleWorld.x} ${muzzleWorld.y} ${muzzleWorld.z}`);
-      p.setAttribute('shadow', 'cast: true; receive: false');
+  p.setAttribute('shadow', 'cast: true; receive: false');
+  p.setAttribute('material', 'emissive: #ffaa00; emissiveIntensity: 0.6');
       p.setAttribute('dynamic-body', 'shape: sphere; mass: 0.1; linearDamping: 0.01; angularDamping: 0.01');
       this.el.sceneEl.appendChild(p);
 
