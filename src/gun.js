@@ -14,7 +14,7 @@
       // Desktop (non-VR) handling
   pickupDistance: { type: 'number', default: 1.5 },
   // Tuned so the weapon sits bottom-right and fully visible in desktop mode
-  desktopHoldOffset: { type: 'vec3', default: {x: 0.18, y: -0.12, z: -0.6} },
+  desktopHoldOffset: { type: 'vec3', default: {x: 0.22, y: -0.18, z: -0.85} },
       desktopHoldRotation: { type: 'vec3', default: {x: 0, y: 0, z: 0} },
       autoDesktopPickup: { type: 'boolean', default: true },
       autoPickupDistance: { type: 'number', default: 3.0 }
@@ -66,6 +66,14 @@
       };
       window.addEventListener('keydown', this._onKeyDown);
       window.addEventListener('mousedown', this._onMouseDown);
+
+      // If model loads later, re-ensure visibility
+      const modelEl = this.el.querySelector('[gltf-model]');
+      if (modelEl){
+        modelEl.addEventListener('model-loaded', ()=>{
+          this._ensureVisible();
+        });
+      }
 
       // Auto-pickup on desktop shortly after load to ensure visibility
       setTimeout(()=>{
