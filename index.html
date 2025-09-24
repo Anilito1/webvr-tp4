@@ -42,7 +42,7 @@
 
   <!-- Arme GLB (proche du joueur) -->
   <!-- Gun repositioned closer to initial player start (camera at z=3) -->
-  <a-entity id="gun" class="grabbable" position="0.25 1.45 2.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" geometry="primitive: box; depth: 0.32; height: 0.14; width: 0.38" material="color: #777; opacity: 0.002; transparent: true" dynamic-body="shape: box; mass: 0.5">
+  <a-entity id="gun" class="grabbable" position="0.25 1.45 2.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" geometry="primitive: box; depth: 0.32; height: 0.14; width: 0.38" material="color: #777; opacity: 0.002; transparent: true">
   <a-entity id="gunModel" gltf-model="./assets/pistol.glb" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
       </a-entity>
 
@@ -114,9 +114,24 @@
             if (gunEnt) gunEnt.setAttribute('vr-gun', 'muzzleOffset: '+parts.join(' '));
           }
         }
+        // Ajout différé du dynamic-body après chargement du modèle pour éviter erreurs (mesh pas prêt)
+        const gunRoot = document.getElementById('gun');
+        let physicsApplied = false;
+        function applyPhysics(){
+          if (!gunRoot || physicsApplied) return;
+            gunRoot.setAttribute('dynamic-body','shape: box; mass: 0.5; linearDamping: 0.01; angularDamping: 0.01');
+            physicsApplied = true;
+        }
+        gm.addEventListener('model-loaded', ()=>{
+          applyPhysics();
+        });
+        // Sécurité: si model-error ou trop long, appliquer quand même boîte simple
+        setTimeout(()=>{ applyPhysics(); }, 1200);
         gm.addEventListener('model-error', ()=>{
           console.warn('[Weapon] model-error → fallback pistol.glb');
           gm.setAttribute('gltf-model','./assets/pistol.glb');
+          // Appliquer physique sur fallback
+          setTimeout(()=>applyPhysics(), 100);
         });
       })();
       // Relocate gun near player if spawned too far (e.g., missing model place)
