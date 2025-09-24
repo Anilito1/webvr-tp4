@@ -97,26 +97,72 @@
       // Dynamic weapon swap via ?weapon=FILENAME (without extension) expects ./assets/FILENAME.glb
       // Default to AK47 if none specified.
       let weaponName = params.get('weapon') || 'AK47';
+      const weaponFile = params.get('weaponglb'); // full filename override (e.g. customGun.glb)
       (function(){
         const gm = document.getElementById('gunModel');
         if (!gm) return;
-        const finalPath = `./assets/${weaponName}.glb`;
+        // Placeholder visible helper
+        const placeholder = document.createElement('a-entity');
+        placeholder.setAttribute('geometry','primitive: box; depth: 0.25; height: 0.12; width: 0.32');
+        placeholder.setAttribute('material','color: #ffcc00; emissive: #664400; emissiveIntensity: 0.4; wireframe: false');
+        placeholder.setAttribute('position','0 0 0');
+        placeholder.setAttribute('scale','1 1 1');
+        gm.parentNode.insertBefore(placeholder, gm);
+        let appliedAutoScale = false;
+        const finalPath = weaponFile ? `./assets/${weaponFile}` : `./assets/${weaponName}.glb`;
         console.log('[Weapon] Tentative chargement', finalPath);
-        gm.addEventListener('model-error', ()=>{
-          if (weaponName !== 'pistol') {
-            console.warn('[Weapon] Erreur chargement', finalPath, ' → fallback pistol.glb');
-            gm.setAttribute('gltf-model', 'url(./assets/pistol.glb)');
-            gm.setAttribute('scale', '0.75 0.75 0.75');
+        const longPattern = /m4|ak|rifle|scar|awp|shotgun|vector|mp5|mp7|lever|hunting/i;
+        const pistolPattern = /1911|usp|ruger|pistol|handgun/i;
+        const applyInitialScale = ()=>{
+          if (weaponFile && !longPattern.test(weaponFile) && !pistolPattern.test(weaponFile)) return; // keep default
+          if (longPattern.test(weaponName) || (weaponFile && longPattern.test(weaponFile))) {
+            gm.setAttribute('scale','0.4 0.4 0.4');
+            gm.setAttribute('position','0 0.02 0');
+          } else if (pistolPattern.test(weaponName) || (weaponFile && pistolPattern.test(weaponFile))) {
+            gm.setAttribute('scale','0.75 0.75 0.75');
+            gm.removeAttribute('position');
+          } else {
+            gm.setAttribute('scale','0.55 0.55 0.55');
+          }
+        };
+        applyInitialScale();
+        gm.addEventListener('model-loaded', ()=>{
+          // Remove placeholder
+          if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+          // Auto scale normalization (target largest dimension ~0.9 for long guns / 0.35 for pistols)
+          const obj = gm.getObject3D('mesh');
+          if (obj) {
+            const box = new THREE.Box3().setFromObject(obj);
+            if (!box.isEmpty()) {
+              const size = new THREE.Vector3(); box.getSize(size);
+              const maxDim = Math.max(size.x,size.y,size.z);
+              let target = 0.9;
+              if (pistolPattern.test(weaponName) || pistolPattern.test(weaponFile||'')) target = 0.35;
+              if (maxDim > 0 && maxDim < 10) {
+                const s = target / maxDim;
+                gm.setAttribute('scale', `${s} ${s} ${s}`);
+                appliedAutoScale = true;
+                console.log('[Weapon] Auto-scale applied factor', s.toFixed(3));
+              }
+            }
           }
         });
+        gm.addEventListener('model-error', ()=>{
+          if (weaponFile || weaponName !== 'pistol') {
+            console.warn('[Weapon] Erreur chargement', finalPath, '→ fallback pistol.glb');
+            gm.setAttribute('gltf-model','url(./assets/pistol.glb)');
+            gm.setAttribute('scale','0.75 0.75 0.75');
+            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+          }
+        });
+        // Timeout: if still placeholder after 3s -> show warning color pulse
+        setTimeout(()=>{
+          if (placeholder && placeholder.parentNode) {
+            placeholder.setAttribute('material','color: #ff0000; emissive: #550000; emissiveIntensity: 0.6');
+            console.warn('[Weapon] Toujours pas chargé après 3s. Vérifie que le fichier existe dans /assets et nom exact');
+          }
+        }, 3000);
         gm.setAttribute('gltf-model', `url(${finalPath})`);
-        if (/m4|ak|rifle|scar|awp|shotgun|vector|mp5|mp7/i.test(weaponName)) {
-          gm.setAttribute('scale', '0.4 0.4 0.4');
-          gm.setAttribute('position', '0 0.02 0');
-        } else {
-          gm.setAttribute('scale', '0.75 0.75 0.75');
-          gm.removeAttribute('position');
-        }
       })();
       // Relocate gun near player if spawned too far (e.g., missing model place)
       scene.addEventListener('loaded', ()=>{
