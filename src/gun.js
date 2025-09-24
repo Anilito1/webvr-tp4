@@ -205,6 +205,13 @@
       o.traverse((n)=>{ n.visible = true; n.frustumCulled = false; });
     },
     fire: function(){
+      // Only allow fire in VR if the gun is grabbed (holdingHand) or in desktop-held mode
+      const scene = this.el.sceneEl;
+      const inVR = scene && scene.is('vr-mode');
+      if (inVR && !this.holdingHand) {
+        // Not currently held; ignore to avoid accidental shots
+        return;
+      }
       // Muzzle world pose
       const obj = this.el.object3D;
       const muzzleLocal = new THREE.Vector3(this.data.muzzleOffset.x, this.data.muzzleOffset.y, this.data.muzzleOffset.z);

@@ -9,7 +9,9 @@
   AFRAME.registerComponent('controller-grab', {
     schema: {
       hand: { type: 'string', default: 'right' },
-  radius: { type: 'number', default: 0.35 } // proximity sphere radius
+  radius: { type: 'number', default: 0.35 }, // proximity sphere radius
+  // If true the trigger button can also be used to grab. Disable to reserve trigger for shooting.
+  useTrigger: { type: 'boolean', default: false }
     },
     init: function(){
   this.grabbed = null;        // grabbed entity
@@ -28,10 +30,11 @@
       this.el.appendChild(this.sphere);
 
   // Button bindings: grip/trigger/select
-      this._onGrip = ()=> this.tryGrab();
-      this._onGripUp = ()=> this.release();
-      this._onTrigger = ()=> this.tryGrab();
-      this._onTriggerUp = ()=> this.release();
+  this._onGrip = ()=> this.tryGrab();
+  this._onGripUp = ()=> this.release();
+  // Trigger optional (reserved for firing when false)
+  this._onTrigger = ()=> this.tryGrab();
+  this._onTriggerUp = ()=> this.release();
       this._onSelect = ()=> this.tryGrab();
       this._onSelectEnd = ()=> this.release();
       // Hover feedback using raycaster-intersection
@@ -49,8 +52,10 @@
 
       this.el.addEventListener('gripdown', this._onGrip);
       this.el.addEventListener('gripup', this._onGripUp);
-      this.el.addEventListener('triggerdown', this._onTrigger);
-      this.el.addEventListener('triggerup', this._onTriggerUp);
+      if (this.data.useTrigger) {
+        this.el.addEventListener('triggerdown', this._onTrigger);
+        this.el.addEventListener('triggerup', this._onTriggerUp);
+      }
       this.el.addEventListener('squeezestart', this._onGrip);
       this.el.addEventListener('squeezeend', this._onGripUp);
       this.el.addEventListener('selectstart', this._onSelect);
@@ -59,8 +64,10 @@
     remove: function(){
       this.el.removeEventListener('gripdown', this._onGrip);
       this.el.removeEventListener('gripup', this._onGripUp);
-      this.el.removeEventListener('triggerdown', this._onTrigger);
-      this.el.removeEventListener('triggerup', this._onTriggerUp);
+      if (this.data.useTrigger) {
+        this.el.removeEventListener('triggerdown', this._onTrigger);
+        this.el.removeEventListener('triggerup', this._onTriggerUp);
+      }
       this.el.removeEventListener('squeezestart', this._onGrip);
       this.el.removeEventListener('squeezeend', this._onGripUp);
       this.el.removeEventListener('selectstart', this._onSelect);
