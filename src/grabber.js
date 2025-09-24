@@ -75,8 +75,8 @@
           if (!gun) return;
           const handPos = this.el.object3D.getWorldPosition(new THREE.Vector3());
           const gunPos = gun.object3D.getWorldPosition(new THREE.Vector3());
-          if (handPos.distanceTo(gunPos) < 0.25) {
-            // Force selection of gun
+          // Distance élargie pour capture rapide (0.4m)
+          if (handPos.distanceTo(gunPos) < 0.4) {
             this._hovered = gun;
             this.tryGrab();
           }

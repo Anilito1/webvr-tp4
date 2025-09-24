@@ -19,7 +19,7 @@
     </style>
   </head>
   <body>
-  <div class="hud">VR: Stick G déplacement | Stick D rotation (snap) | Triggers: grab/tirer | Desktop: E prendre/poser, Clic/F tirer | Score: <span id="score">0</span> | Safe: ajouter ?safe=1 si freeze<br><span id="dbg"></span></div>
+  <div class="hud">VR: Grip/Squeeze = Prendre | Trigger (tenir) = Tirer | Stick G déplacer | Stick D rotation | Desktop: E prendre/poser, Clic/F tirer | Score: <span id="score">0</span> | ?safe=1 perf<br><span id="dbg"></span></div>
 
   <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81; broadphase: SAP; allowSleep: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
       <a-assets id="assets">
@@ -57,12 +57,12 @@
     </a-entity>
 
   <!-- Contrôleur gauche (Quest 3) -->
-  <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .grabbable; far: 10" controller-grab="hand: left; radius: 0.5; useTrigger: false">
+  <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .grabbable; far: 10" controller-grab="hand: left; radius: 0.65; useTrigger: false">
     <a-sphere radius="0.02" color="#66ccff"></a-sphere>
   </a-entity>
 
   <!-- Contrôleur droit (Quest 3) -->
-  <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .grabbable; far: 10" controller-grab="hand: right; radius: 0.5; useTrigger: false">
+  <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .grabbable; far: 10" controller-grab="hand: right; radius: 0.65; useTrigger: false">
     <a-sphere radius="0.02" color="#ff9966"></a-sphere>
   </a-entity>
       </a-entity>
@@ -70,7 +70,7 @@
       <!-- SKY -->
   <a-sky color="#223"></a-sky>
   <!-- In-VR floating hints -->
-  <a-entity position="0 2.2 1.2" text="value: Stick G = Move | Stick D = Snap Turn | Grip/Trigger = Grab | Trigger arme = Tirer; align: center; width: 4" rotation="0 180 0"></a-entity>
+  <a-entity position="0 2.2 1.2" text="value: Grip/Squeeze = Prendre | Trigger = Tirer | Stick G = Move | Stick D = Snap Turn; align: center; width: 4" rotation="0 180 0"></a-entity>
     </a-scene>
     <script>
       const scene = document.getElementById('scene');
