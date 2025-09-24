@@ -79,6 +79,9 @@
       const debug = params.get('debug') === '1';
   const perf = params.get('perf') === '1';
   const noAutoPick = params.get('noautopick') === '1';
+  const gunDebug = params.get('gundebug') === '1';
+  const showGun = params.get('showgun') === '1' || gunDebug;
+  const lockGun = params.get('lockgun') === '1';
   const muzzleParam = params.get('muzzle'); // format: x,y,z or x y z
       if (safe) {
         // Disable heavy effects in safe mode
@@ -194,6 +197,18 @@
                 appliedAutoScale = true;
                 console.log('[Weapon] Auto-scale factor', s.toFixed(3));
               }
+                if (gunDebug) {
+                  console.log('[Weapon][Debug] Box size', size, 'scale', gm.getAttribute('scale'));
+                  // Add wireframe bbox helper entity
+                  try {
+                    const wf = document.createElement('a-entity');
+                    wf.setAttribute('geometry', `primitive: box; width: ${size.x.toFixed(3)}; height: ${size.y.toFixed(3)}; depth: ${size.z.toFixed(3)}`);
+                    const center = new THREE.Vector3(); box.getCenter(center);
+                    wf.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
+                    wf.setAttribute('material', 'color: #00ffcc; wireframe: true; opacity: 0.6');
+                    gm.appendChild(wf);
+                  } catch(e){}
+                }
             }
           }
           // HUD success + file name
@@ -201,6 +216,7 @@
             const dbg = document.getElementById('dbg');
             if (dbg && lastAttemptPath) dbg.textContent = (dbg.textContent + ' | Arme chargée: ' + lastAttemptPath.replace(/.*\\/,'')).trim();
             if (noAutoPick) dbg.textContent = (dbg.textContent + ' | autoPick désactivé').trim();
+              if (gunDebug) dbg.textContent = (dbg.textContent + ' | debug ON').trim();
           } catch(e){}
           // Manual muzzle override if provided
           if (muzzleParam) {
@@ -243,8 +259,30 @@
             gun.setAttribute('position', `${target.x} ${target.y} ${target.z}`);
             console.log('[Weapon] Reposition automatique près du joueur');
           }
+          if (showGun) {
+            try { gun.setAttribute('material','color: #ff22aa; opacity: 0.25; transparent: true'); } catch(e){}
+          }
+          if (lockGun) {
+            try { gun.removeAttribute('dynamic-body'); gun.setAttribute('kinematic-body',''); console.log('[Weapon][Debug] lockgun actif'); } catch(e){}
+          }
         }
       });
+      if (gunDebug) {
+        // Poll visibility a few frames
+        let frames=0;
+        const gun = document.getElementById('gun');
+        function visCheck(){
+          frames++;
+          if (gun) {
+            const obj = gun.object3D;
+            if (!obj) return requestAnimationFrame(visCheck);
+            const p = obj.getWorldPosition(new THREE.Vector3());
+            if (frames<120) requestAnimationFrame(visCheck);
+            console.log('[Weapon][Debug] frame', frames,'worldPos', p.x.toFixed(2), p.y.toFixed(2), p.z.toFixed(2));
+          }
+        }
+        requestAnimationFrame(visCheck);
+      }
       if (debug) {
         const gun = document.getElementById('gun');
         if (gun) {
