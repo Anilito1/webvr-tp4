@@ -41,7 +41,8 @@
   <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
 
   <!-- Arme GLB (proche du joueur) -->
-  <a-entity id="gun" class="grabbable" position="0.3 1.4 -0.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" geometry="primitive: box; depth: 0.32; height: 0.14; width: 0.38" material="color: #777; opacity: 0.002; transparent: true" dynamic-body="shape: box; mass: 0.5">
+  <!-- Gun repositioned closer to initial player start (camera at z=3) -->
+  <a-entity id="gun" class="grabbable" position="0.25 1.45 2.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" geometry="primitive: box; depth: 0.32; height: 0.14; width: 0.38" material="color: #777; opacity: 0.002; transparent: true" dynamic-body="shape: box; mass: 0.5">
     <a-entity id="gunModel" gltf-model="url(./assets/pistol.glb)" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
       </a-entity>
 
@@ -96,31 +97,43 @@
       // Dynamic weapon swap via ?weapon=FILENAME (without extension) expects ./assets/FILENAME.glb
       // Default to AK47 if none specified.
       let weaponName = params.get('weapon') || 'AK47';
-      (async ()=>{
+      (function(){
         const gm = document.getElementById('gunModel');
         if (!gm) return;
-        const path = `./assets/${weaponName}.glb`;
-        let exists = true;
-        try {
-          const res = await fetch(path, { method: 'HEAD' });
-          if (!res.ok) exists = false;
-        } catch(e){ exists = false; }
-        if (!exists) {
-          console.warn('[Weapon] Fichier', path, 'introuvable. Fallback pistol.glb');
-          weaponName = 'pistol';
-        }
         const finalPath = `./assets/${weaponName}.glb`;
-        console.log('[Weapon] Chargement', finalPath);
+        console.log('[Weapon] Tentative chargement', finalPath);
+        gm.addEventListener('model-error', ()=>{
+          if (weaponName !== 'pistol') {
+            console.warn('[Weapon] Erreur chargement', finalPath, ' → fallback pistol.glb');
+            gm.setAttribute('gltf-model', 'url(./assets/pistol.glb)');
+            gm.setAttribute('scale', '0.75 0.75 0.75');
+          }
+        });
         gm.setAttribute('gltf-model', `url(${finalPath})`);
         if (/m4|ak|rifle|scar|awp|shotgun|vector|mp5|mp7/i.test(weaponName)) {
           gm.setAttribute('scale', '0.4 0.4 0.4');
-          // Slight adjust for longer rifles (raise a bit)
           gm.setAttribute('position', '0 0.02 0');
         } else {
           gm.setAttribute('scale', '0.75 0.75 0.75');
           gm.removeAttribute('position');
         }
       })();
+      // Relocate gun near player if spawned too far (e.g., missing model place)
+      scene.addEventListener('loaded', ()=>{
+        const gun = document.getElementById('gun');
+        const head = document.getElementById('head');
+        if (gun && head) {
+          const gp = gun.object3D.getWorldPosition(new THREE.Vector3());
+          const hp = head.object3D.getWorldPosition(new THREE.Vector3());
+          if (gp.distanceTo(hp) > 2.5) {
+            const forward = new THREE.Vector3(0,0,-1).applyQuaternion(head.object3D.getWorldQuaternion(new THREE.Quaternion()));
+            const target = hp.clone().add(forward.multiplyScalar(0.5));
+            target.y -= 0.15;
+            gun.setAttribute('position', `${target.x} ${target.y} ${target.z}`);
+            console.log('[Weapon] Reposition automatique près du joueur');
+          }
+        }
+      });
       if (debug) {
         const gun = document.getElementById('gun');
         if (gun) {
