@@ -154,6 +154,11 @@
             gm.setAttribute('gltf-model','url(./assets/pistol.glb)');
             gm.setAttribute('scale','0.75 0.75 0.75');
             if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+            // HUD warning visible to user
+            try {
+              const dbg = document.getElementById('dbg');
+              if (dbg) dbg.textContent = (dbg.textContent + ' | Arme non trouvée: place gun.glb dans assets/ et utilise ?weaponglb=gun.glb').trim();
+            } catch(e){}
             return;
           }
           const path = finalList[attemptIndex++];
