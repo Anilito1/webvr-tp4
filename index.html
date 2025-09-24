@@ -43,7 +43,7 @@
   <!-- Arme GLB (proche du joueur) -->
   <!-- Gun repositioned closer to initial player start (camera at z=3) -->
   <a-entity id="gun" class="grabbable" position="0.25 1.45 2.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" geometry="primitive: box; depth: 0.32; height: 0.14; width: 0.38" material="color: #777; opacity: 0.002; transparent: true" dynamic-body="shape: box; mass: 0.5">
-    <a-entity id="gunModel" gltf-model="url(./assets/pistol.glb)" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
+  <a-entity id="gunModel" gltf-model="./assets/pistol.glb" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
       </a-entity>
 
   <!-- Spawner de cibles (mêmes emplacements à chaque vague) -->
@@ -162,7 +162,7 @@
         const loadNext = ()=>{
           if (attemptIndex >= finalList.length) {
             console.warn('[Weapon] All candidates failed, fallback to pistol.glb');
-            gm.setAttribute('gltf-model','url(./assets/pistol.glb)');
+            gm.setAttribute('gltf-model','./assets/pistol.glb');
             gm.setAttribute('scale','0.75 0.75 0.75');
             if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
             // HUD warning visible to user
@@ -175,7 +175,7 @@
           const path = finalList[attemptIndex++];
           lastAttemptPath = path;
           console.log('[Weapon] Loading', path);
-          gm.setAttribute('gltf-model','url(' + path + ')');
+          gm.setAttribute('gltf-model', path);
         };
         gm.addEventListener('model-loaded', ()=>{
           // Petite temporisation pour éviter effet flash (apparition/disparition)
