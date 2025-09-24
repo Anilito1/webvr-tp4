@@ -28,6 +28,8 @@
       this._onTriggerDown = ()=> this.fire();
       this._onGripDown = ()=> this.fire(); // fallback if trigger events absent
       this._onSqueeze = ()=> this.fire();
+      this._muzzleResolved = false;
+      this._pendingMuzzleAdjust = null;
       this._onGrabStart = (e)=>{
         this.holdingHand = e.detail && e.detail.handEl;
         if (this.holdingHand){
@@ -91,7 +93,13 @@
       this._fallback.setAttribute('material', 'color: #ffffff; emissive: #888');
       this.el.appendChild(this._fallback);
       const hideFallback = ()=>{ if (this._fallback) { this._fallback.setAttribute('visible', 'false'); } };
-      if (modelEl){ modelEl.addEventListener('model-loaded', ()=>{ this._ensureVisible(); hideFallback(); }); }
+      if (modelEl){
+        modelEl.addEventListener('model-loaded', ()=>{
+          this._ensureVisible();
+          hideFallback();
+          this._resolveMuzzle(modelEl);
+        });
+      }
 
       // Auto-pickup on desktop shortly after load to ensure visibility
       setTimeout(()=>{
@@ -115,6 +123,34 @@
         sceneEl.addEventListener('enter-vr', ()=>{ const r=document.getElementById('reticle'); if(r) r.setAttribute('visible','false'); });
         sceneEl.addEventListener('exit-vr', ()=>{ const r=document.getElementById('reticle'); if(r) r.setAttribute('visible','true'); });
       }
+    },
+    _resolveMuzzle: function(modelEl){
+      if (this._muzzleResolved) return;
+      const obj = modelEl.getObject3D('mesh');
+      if (!obj) return; // model not fully ready
+      // Try to find an object named 'Muzzle' (case-insensitive)
+      let muzzleNode = null;
+      obj.traverse(n=>{ if (!muzzleNode && n.name && n.name.toLowerCase().includes('muzzle')) muzzleNode = n; });
+      if (muzzleNode){
+        const v = new THREE.Vector3();
+        muzzleNode.getWorldPosition(v);
+        // Convert world to local of gun root
+        const local = this.el.object3D.worldToLocal(v.clone());
+        this.data.muzzleOffset = { x: local.x, y: local.y, z: local.z };
+        if (this.data.debug) console.log('[Gun] Muzzle node offset resolved', this.data.muzzleOffset);
+        this._muzzleResolved = true;
+        return;
+      }
+      // Else compute bounding box to approximate front (-Z)
+      const box = new THREE.Box3().setFromObject(obj);
+      if (box.isEmpty()) return;
+      // Front along negative Z in our orientation: use min.z minus small padding
+      const center = new THREE.Vector3(); box.getCenter(center);
+      const size = new THREE.Vector3(); box.getSize(size);
+      const zFront = box.min.z - 0.04; // a bit beyond front
+      this.data.muzzleOffset = { x: center.x, y: center.y * 0.1, z: zFront };
+      if (this.data.debug) console.log('[Gun] BoundingBox muzzle offset', this.data.muzzleOffset, 'size', size);
+      this._muzzleResolved = true;
     },
     _hudFire: function(){
       const dbg = document.getElementById('dbg');

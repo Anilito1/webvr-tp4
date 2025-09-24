@@ -22,6 +22,10 @@
   <div class="hud">VR: Stick G déplacement | Stick D rotation (snap) | Triggers: grab/tirer | Desktop: E prendre/poser, Clic/F tirer | Score: <span id="score">0</span> | Safe: ajouter ?safe=1 si freeze<br><span id="dbg"></span></div>
 
   <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81; broadphase: SAP; allowSleep: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
+      <a-assets id="assets">
+        <!-- Optionally place new weapon model (convert your FBX to glb and put in assets/) -->
+        <!-- Example: <a-asset-item id="weaponModel" src="./assets/M4A1.glb"></a-asset-item> -->
+      </a-assets>
       <!-- LUMIÈRES -->
   <a-entity light="type: ambient; color: #BBB; intensity: 0.4"></a-entity>
   <a-entity id="dirLight" position="2 4 1" light="type: directional; color: #fff; intensity: 1.0; castShadow: true; shadowCameraVisible: false"></a-entity>
@@ -38,7 +42,7 @@
 
   <!-- Arme GLB (proche du joueur) -->
   <a-entity id="gun" class="grabbable" position="0.3 1.4 -0.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" geometry="primitive: box; depth: 0.32; height: 0.14; width: 0.38" material="color: #777; opacity: 0.002; transparent: true" dynamic-body="shape: box; mass: 0.5">
-    <a-entity gltf-model="url(./assets/pistol.glb)" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
+    <a-entity id="gunModel" gltf-model="url(./assets/pistol.glb)" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
       </a-entity>
 
   <!-- Spawner de cibles (mêmes emplacements à chaque vague) -->
@@ -88,6 +92,22 @@
         const dl = document.getElementById('dirLight');
         if (dl) dl.setAttribute('light', 'intensity: 0.8; castShadow: false');
         console.log('[Perf] mode actif');
+      }
+      // Dynamic weapon swap via ?weapon=FILENAME (without extension) expects ./assets/FILENAME.glb
+      const weaponName = params.get('weapon');
+      if (weaponName) {
+        const gm = document.getElementById('gunModel');
+        if (gm) {
+          const path = `./assets/${weaponName}.glb`;
+          console.log('[Weapon] trying', path);
+          gm.setAttribute('gltf-model', `url(${path})`);
+          // Heuristic scale presets (adjust if rifle vs pistol)
+          if (/m4|ak|rifle|scar|awp|shotgun|vector|mp5|mp7/i.test(weaponName)) {
+            gm.setAttribute('scale', '0.4 0.4 0.4');
+          } else {
+            gm.setAttribute('scale', '0.75 0.75 0.75');
+          }
+        }
       }
       if (debug) {
         const gun = document.getElementById('gun');
