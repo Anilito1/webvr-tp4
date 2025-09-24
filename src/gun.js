@@ -122,6 +122,20 @@
       if (sceneEl){
         sceneEl.addEventListener('enter-vr', ()=>{ const r=document.getElementById('reticle'); if(r) r.setAttribute('visible','false'); });
         sceneEl.addEventListener('exit-vr', ()=>{ const r=document.getElementById('reticle'); if(r) r.setAttribute('visible','true'); });
+        sceneEl.addEventListener('enter-vr', ()=>{
+          // Auto-grab attempt: find right hand controller and simulate grab if close enough
+          setTimeout(()=>{
+            const gun = this.el;
+            const right = document.getElementById('rightHand');
+            if (gun && right && !this.holdingHand){
+              const gp = gun.object3D.getWorldPosition(new THREE.Vector3());
+              const rp = right.object3D.getWorldPosition(new THREE.Vector3());
+              if (gp.distanceTo(rp) < 0.8){
+                gun.emit('grab-start', { handEl: right }, false);
+              }
+            }
+          }, 600);
+        });
       }
     },
     _resolveMuzzle: function(modelEl){
@@ -263,6 +277,16 @@
       const obj = this.el.object3D;
       const muzzleLocal = new THREE.Vector3(this.data.muzzleOffset.x, this.data.muzzleOffset.y, this.data.muzzleOffset.z);
       const muzzleWorld = obj.localToWorld(muzzleLocal.clone());
+      // Debug muzzle gizmo (short lived) if debug
+      if (this.data.debug) {
+        const giz = document.createElement('a-sphere');
+        giz.setAttribute('radius', 0.015);
+        giz.setAttribute('color', '#ff00ff');
+        giz.setAttribute('position', `${muzzleWorld.x} ${muzzleWorld.y} ${muzzleWorld.z}`);
+        const sceneRootDbg = this.el.sceneEl || document.querySelector('a-scene');
+        sceneRootDbg.appendChild(giz);
+        setTimeout(()=>{ giz.parentNode && giz.parentNode.removeChild(giz); }, 500);
+      }
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(obj.getWorldQuaternion(tmpQ)).normalize();
 
       // Create projectile

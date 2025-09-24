@@ -94,21 +94,33 @@
         console.log('[Perf] mode actif');
       }
       // Dynamic weapon swap via ?weapon=FILENAME (without extension) expects ./assets/FILENAME.glb
-      const weaponName = params.get('weapon');
-      if (weaponName) {
+      // Default to AK47 if none specified.
+      let weaponName = params.get('weapon') || 'AK47';
+      (async ()=>{
         const gm = document.getElementById('gunModel');
-        if (gm) {
-          const path = `./assets/${weaponName}.glb`;
-          console.log('[Weapon] trying', path);
-          gm.setAttribute('gltf-model', `url(${path})`);
-          // Heuristic scale presets (adjust if rifle vs pistol)
-          if (/m4|ak|rifle|scar|awp|shotgun|vector|mp5|mp7/i.test(weaponName)) {
-            gm.setAttribute('scale', '0.4 0.4 0.4');
-          } else {
-            gm.setAttribute('scale', '0.75 0.75 0.75');
-          }
+        if (!gm) return;
+        const path = `./assets/${weaponName}.glb`;
+        let exists = true;
+        try {
+          const res = await fetch(path, { method: 'HEAD' });
+          if (!res.ok) exists = false;
+        } catch(e){ exists = false; }
+        if (!exists) {
+          console.warn('[Weapon] Fichier', path, 'introuvable. Fallback pistol.glb');
+          weaponName = 'pistol';
         }
-      }
+        const finalPath = `./assets/${weaponName}.glb`;
+        console.log('[Weapon] Chargement', finalPath);
+        gm.setAttribute('gltf-model', `url(${finalPath})`);
+        if (/m4|ak|rifle|scar|awp|shotgun|vector|mp5|mp7/i.test(weaponName)) {
+          gm.setAttribute('scale', '0.4 0.4 0.4');
+          // Slight adjust for longer rifles (raise a bit)
+          gm.setAttribute('position', '0 0.02 0');
+        } else {
+          gm.setAttribute('scale', '0.75 0.75 0.75');
+          gm.removeAttribute('position');
+        }
+      })();
       if (debug) {
         const gun = document.getElementById('gun');
         if (gun) {
