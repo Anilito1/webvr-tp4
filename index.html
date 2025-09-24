@@ -78,6 +78,7 @@
       const safe = params.get('safe') === '1';
       const debug = params.get('debug') === '1';
       const perf = params.get('perf') === '1';
+  const muzzleParam = params.get('muzzle'); // format: x,y,z or x y z
       if (safe) {
         // Disable heavy effects in safe mode
         scene.setAttribute('fog', 'enabled: false');
@@ -131,8 +132,9 @@
         candidates.push('../' + baseNoExt + '.gltf');
         // De-dupe while preserving order
         const seen = new Set();
-        const finalList = candidates.filter(p=>{ if (seen.has(p)) return false; seen.add(p); return true; });
+  const finalList = candidates.filter(p=>{ if (seen.has(p)) return false; seen.add(p); return true; });
         let attemptIndex = 0;
+  let lastAttemptPath = null;
         console.log('[Weapon] Candidates:', finalList);
         const applyInitialScale = ()=>{
           const ref = weaponFileParam || weaponName;
@@ -162,6 +164,7 @@
             return;
           }
           const path = finalList[attemptIndex++];
+          lastAttemptPath = path;
           console.log('[Weapon] Loading', path);
           gm.setAttribute('gltf-model','url(' + path + ')');
         };
@@ -182,6 +185,25 @@
                 appliedAutoScale = true;
                 console.log('[Weapon] Auto-scale factor', s.toFixed(3));
               }
+            }
+          }
+          // HUD success + file name
+          try {
+            const dbg = document.getElementById('dbg');
+            if (dbg && lastAttemptPath) dbg.textContent = (dbg.textContent + ' | Arme chargée: ' + lastAttemptPath.replace(/.*\\/,'')).trim();
+          } catch(e){}
+          // Manual muzzle override if provided
+          if (muzzleParam) {
+            const parts = muzzleParam.split(/[;, ]+/).map(parseFloat).filter(n=>!isNaN(n));
+            if (parts.length === 3) {
+              const gunEnt = document.getElementById('gun');
+              if (gunEnt) {
+                gunEnt.setAttribute('vr-gun', 'muzzleOffset', parts[0] + ' ' + parts[1] + ' ' + parts[2]);
+                console.log('[Weapon] Muzzle override via ?muzzle=', parts);
+                try { const dbg = document.getElementById('dbg'); if (dbg) dbg.textContent = (dbg.textContent + ' | muzzle=' + parts.join(',')); } catch(e){}
+              }
+            } else {
+              console.warn('[Weapon] Param ?muzzle= invalide. Utilise ?muzzle=x,y,z');
             }
           }
         });
