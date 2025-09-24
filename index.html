@@ -6,16 +6,8 @@
     <title>TP4 - WebVR - Exercice 1</title>
     <!-- A-Frame stable -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script>
-      // Lecture très tôt du paramètre nophysics pour ne pas charger la lib si inutile
-      (function(){
-        const p=new URLSearchParams(location.search);
-        if(p.get('nophysics')==='1') { console.log('[Init] Mode sans physique'); return; }
-        const s=document.createElement('script');
-        s.src='https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js';
-        document.head.appendChild(s);
-      })();
-    </script>
+    <!-- Physique retirée pour simplifier (plus d'erreurs addVectors). Activer à nouveau facilement si besoin. -->
+    <script>console.log('[Init] Mode simplifié: pas de physique');</script>
     <script src="./src/controls.js"></script>
   <script src="./src/grabber.js"></script>
     <script src="./src/gun.js"></script>
@@ -27,7 +19,7 @@
     </style>
   </head>
   <body>
-  <div class="hud">VR: Grip/Squeeze = Prendre | Trigger (tenir) = Tirer | Stick G déplacer | Stick D rotation | Desktop: E prendre/poser, Clic/F tirer | Score: <span id="score">0</span> | ?safe=1 perf<br><span id="dbg"></span></div>
+  <div class="hud">VR: Grip/Squeeze = Prendre | Trigger (tenir) = Tirer | Stick G déplacer | Stick D rotation | Desktop: E prendre/poser, Clic/F tirer | Score: <span id="score">0</span> | (mode sans physique)<br><span id="dbg"></span></div>
 
   <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
       <a-assets id="assets">
@@ -88,7 +80,7 @@
   const perf = params.get('perf') === '1';
   const noAutoPick = params.get('noautopick') === '1';
   const muzzleParam = params.get('muzzle'); // format: x,y,z or x y z
-  const noPhysics = params.get('nophysics') === '1';
+  const noPhysics = true; // physique totalement désactivée maintenant
       if (safe) {
         // Disable heavy effects in safe mode
         scene.setAttribute('fog', 'enabled: false');
@@ -105,20 +97,7 @@
         if (dl) dl.setAttribute('light', 'intensity: 0.8; castShadow: false');
         console.log('[Perf] mode actif');
       }
-      if (noPhysics) {
-        console.log('[Init] Suppression des attributs physiques');
-        // Retirer l'attribut physics sur la scène s'il y était
-        try { scene.removeAttribute('physics'); } catch(e){}
-        // Supprimer dynamic-body / static-body existants pour éviter erreurs
-        Array.from(document.querySelectorAll('[dynamic-body],[static-body]')).forEach(el=>{
-          el.removeAttribute('dynamic-body');
-          el.removeAttribute('static-body');
-        });
-      } else {
-        // Appliquer physics basique tardivement (après chargement script) si pas en noPhysics
-        window.addEventListener('DOMContentLoaded', ()=>{
-          setTimeout(()=>{ if (!scene.getAttribute('physics')) scene.setAttribute('physics','gravity: -9.81;'); }, 200); });
-      }
+      // (plus de branche physique)
       // Loader SIMPLE : soit ?weaponglb=MonFichier.glb, soit ?weapon=Nom (=> assets/Nom.glb), sinon pistol.glb
       (function(){
         const gm = document.getElementById('gunModel'); if(!gm) return;
@@ -137,24 +116,10 @@
             if (gunEnt) gunEnt.setAttribute('vr-gun', 'muzzleOffset: '+parts.join(' '));
           }
         }
-        // Ajout différé du dynamic-body après chargement du modèle pour éviter erreurs (mesh pas prêt)
-        const gunRoot = document.getElementById('gun');
-        let physicsApplied = false;
-        function applyPhysics(){
-          if (!gunRoot || physicsApplied) return;
-            gunRoot.setAttribute('dynamic-body','shape: box; mass: 0.5; linearDamping: 0.01; angularDamping: 0.01');
-            physicsApplied = true;
-        }
-        gm.addEventListener('model-loaded', ()=>{
-          applyPhysics();
-        });
-        // Sécurité: si model-error ou trop long, appliquer quand même boîte simple
-        setTimeout(()=>{ applyPhysics(); }, 1200);
+        // (physique supprimée: plus d'application dynamic-body)
         gm.addEventListener('model-error', ()=>{
           console.warn('[Weapon] model-error → fallback pistol.glb');
           gm.setAttribute('gltf-model','./assets/pistol.glb');
-          // Appliquer physique sur fallback
-          setTimeout(()=>applyPhysics(), 100);
         });
       })();
       // Relocate gun near player if spawned too far (e.g., missing model place)

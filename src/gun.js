@@ -291,35 +291,45 @@
       }
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(obj.getWorldQuaternion(tmpQ)).normalize();
 
-      // Create projectile
+      // Create projectile (sans physique) + mouvement manuel
       const p = document.createElement('a-sphere');
       p.setAttribute('radius', this.data.projectileRadius);
       p.setAttribute('color', this.data.projectileColor);
       p.setAttribute('position', `${muzzleWorld.x} ${muzzleWorld.y} ${muzzleWorld.z}`);
-  p.setAttribute('shadow', 'cast: true; receive: false');
-  p.setAttribute('material', 'emissive: #ffaa00; emissiveIntensity: 0.6');
+      p.setAttribute('shadow', 'cast: true; receive: false');
+      p.setAttribute('material', 'emissive: #ffaa00; emissiveIntensity: 0.6');
       const sceneRoot = this.el.sceneEl || document.querySelector('a-scene');
       sceneRoot.appendChild(p);
-      p.setAttribute('dynamic-body', 'shape: sphere; mass: 0.1; linearDamping: 0.01; angularDamping: 0.01');
-      // Set initial velocity once the body is ready
       const speed = this.data.speed;
-      p.addEventListener('body-loaded', ()=>{
-        try { p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed); } catch(e){}
-      });
-      // Fallback re-apply velocity shortly after spawn (some browsers delay body-loaded)
-      setTimeout(()=>{
-        if (p.body && p.body.velocity && p.body.velocity.almostZero && p.body.velocity.lengthSquared && p.body.velocity.lengthSquared() < 0.01) {
-          try { p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed); } catch(e){}
-        } else if (p.body && p.body.velocity) {
-          // If zero length by manual inspection
-          if (Math.abs(p.body.velocity.x)+Math.abs(p.body.velocity.y)+Math.abs(p.body.velocity.z) < 0.0001) {
-            try { p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed); } catch(e){}
+      const startTime = performance.now();
+      const lifeMs = this.data.life * 1000;
+      const self = this;
+      function step(){
+        if(!p.parentNode) return;
+        const elapsed = performance.now() - startTime;
+        if (elapsed > lifeMs){ p.parentNode && p.parentNode.removeChild(p); return; }
+        // avancer
+        const pos = p.object3D.position; pos.x += dir.x * speed * 0.016; pos.y += dir.y * speed * 0.016; pos.z += dir.z * speed * 0.016; p.object3D.matrixWorldNeedsUpdate = true;
+        // collision simple (sphère vs AABB) avec les entités .target
+        const targets = sceneRoot.querySelectorAll('.target');
+        for (let i=0;i<targets.length;i++){
+          const t = targets[i];
+          const mesh = t.object3D;
+          if(!mesh) continue;
+          const box = new THREE.Box3().setFromObject(mesh);
+          const r = self.data.projectileRadius;
+          if (box.containsPoint(p.object3D.getWorldPosition(new THREE.Vector3()))){
+            // score + suppression cible
+            const scoreEl = document.getElementById('score');
+            if (scoreEl){ scoreEl.textContent = (parseInt(scoreEl.textContent||'0',10)+1); }
+            if (t.parentNode) t.parentNode.removeChild(t);
+            p.parentNode && p.parentNode.removeChild(p);
+            return;
           }
         }
-      }, 120);
-
-      // Cleanup after life
-      setTimeout(()=>{ if (p && p.parentNode) p.parentNode.removeChild(p); }, this.data.life * 1000);
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
 
       // Simple muzzle flash
       const flash = document.createElement('a-sphere');
