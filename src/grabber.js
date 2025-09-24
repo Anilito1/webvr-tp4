@@ -21,6 +21,7 @@
       this.offsetQuat = new THREE.Quaternion();
   this._grabbables = Array.from(this.el.sceneEl.querySelectorAll('.grabbable'));
   this._lastScan = 0;
+  this._scanInterval = 400; // ms between rescan
 
       // Collider helper
       this.sphere = document.createElement('a-sphere');
@@ -93,13 +94,18 @@
 
       // Occasionally rescan grabbables (in case scene changed)
       const now = performance.now();
-      if (now - this._lastScan > 1000) {
+      if (now - this._lastScan > this._scanInterval) {
         this._grabbables = Array.from(this.el.sceneEl.querySelectorAll('.grabbable'));
         this._lastScan = now;
       }
 
   // If raycaster hits a grabbable, prefer it
   let best = this._hovered && this._hovered.classList.contains('grabbable') ? this._hovered : null;
+  // If hovered element is a child inside the gun, escalate to gun root if needed
+  if (best && best.closest && best.classList.contains('gun-hitbox')) {
+    const gunRoot = best.closest('#gun');
+    if (gunRoot) best = gunRoot;
+  }
 
   // Find closest grabbable within radius (near grab)
       const grabbables = this._grabbables;
@@ -129,8 +135,20 @@
   this.offsetQuat.copy(invHandQuat.multiply(objQuat));
 
   // Switch to kinematic to follow hand cleanly
-  if (best.hasAttribute('dynamic-body')) best.removeAttribute('dynamic-body');
+  if (best.hasAttribute('dynamic-body')) try { best.removeAttribute('dynamic-body'); } catch(e){}
   best.setAttribute('kinematic-body', '');
+  // Visual feedback outline (temporary)
+  if (!best._grabGlow) {
+    try {
+      const box = document.createElement('a-entity');
+      box.setAttribute('geometry', 'primitive: box; depth: 0.4; height: 0.18; width: 0.46');
+      box.setAttribute('material', 'color: #ffff88; wireframe: true; opacity: 0.4');
+      box.setAttribute('position', '0 0 0');
+      best.appendChild(box);
+      best._grabGlow = box;
+      setTimeout(()=>{ if (box.parentNode) box.parentNode.removeChild(box); best._grabGlow=null; }, 500);
+    } catch(e){}
+  }
   this.grabbed = best;
   this.holdingHand = this.el;
   // Notify the grabbed entity who is holding it
