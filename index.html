@@ -6,8 +6,16 @@
     <title>TP4 - WebVR - Exercice 1</title>
     <!-- A-Frame stable -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <!-- Physics system (cannon-es) -->
-  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+    <script>
+      // Lecture très tôt du paramètre nophysics pour ne pas charger la lib si inutile
+      (function(){
+        const p=new URLSearchParams(location.search);
+        if(p.get('nophysics')==='1') { console.log('[Init] Mode sans physique'); return; }
+        const s=document.createElement('script');
+        s.src='https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js';
+        document.head.appendChild(s);
+      })();
+    </script>
     <script src="./src/controls.js"></script>
   <script src="./src/grabber.js"></script>
     <script src="./src/gun.js"></script>
@@ -21,7 +29,7 @@
   <body>
   <div class="hud">VR: Grip/Squeeze = Prendre | Trigger (tenir) = Tirer | Stick G déplacer | Stick D rotation | Desktop: E prendre/poser, Clic/F tirer | Score: <span id="score">0</span> | ?safe=1 perf<br><span id="dbg"></span></div>
 
-  <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81; broadphase: SAP; allowSleep: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
+  <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
       <a-assets id="assets">
         <!-- Optionally place new weapon model (convert your FBX to glb and put in assets/) -->
         <!-- Example: <a-asset-item id="weaponModel" src="./assets/M4A1.glb"></a-asset-item> -->
@@ -32,13 +40,13 @@
 
       <!-- SOL -->
   <!-- SOL solide (box) pour éviter les traversées -->
-  <a-box position="0 -0.05 0" width="40" depth="40" height="0.1" color="#556" material="metalness: 0.2; roughness: 0.8" shadow="receive: true" static-body="shape: box; friction: 0.6; restitution: 0"></a-box>
+  <a-box position="0 -0.05 0" width="40" depth="40" height="0.1" color="#556" material="metalness: 0.2; roughness: 0.8" shadow="receive: true" data-ground></a-box>
 
       <!-- OBJETS 3D -->
   <!-- Cibles fixes supplémentaires: carré et rond du début -->
-  <a-box id="cube" class="target grabbable" position="-3 1.2 -6" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1" target-hit></a-box>
-  <a-sphere id="sphere" class="target grabbable" position="3 1.75 -6" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" dynamic-body="shape: sphere; mass: 1.5" target-hit></a-sphere>
-  <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
+  <a-box id="cube" class="target grabbable" position="-3 1.2 -6" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" data-dyn></a-box>
+  <a-sphere id="sphere" class="target grabbable" position="3 1.75 -6" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" data-dyn></a-sphere>
+  <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" data-dyn></a-cylinder>
 
   <!-- Arme GLB (proche du joueur) -->
   <!-- Gun repositioned closer to initial player start (camera at z=3) -->
@@ -73,13 +81,14 @@
   <a-entity position="0 2.2 1.2" text="value: Grip/Squeeze = Prendre | Trigger = Tirer | Stick G = Move | Stick D = Snap Turn; align: center; width: 4" rotation="0 180 0"></a-entity>
     </a-scene>
     <script>
-      const scene = document.getElementById('scene');
+  const scene = document.getElementById('scene');
       const params = new URLSearchParams(location.search);
       const safe = params.get('safe') === '1';
       const debug = params.get('debug') === '1';
   const perf = params.get('perf') === '1';
   const noAutoPick = params.get('noautopick') === '1';
   const muzzleParam = params.get('muzzle'); // format: x,y,z or x y z
+  const noPhysics = params.get('nophysics') === '1';
       if (safe) {
         // Disable heavy effects in safe mode
         scene.setAttribute('fog', 'enabled: false');
@@ -95,6 +104,20 @@
         const dl = document.getElementById('dirLight');
         if (dl) dl.setAttribute('light', 'intensity: 0.8; castShadow: false');
         console.log('[Perf] mode actif');
+      }
+      if (noPhysics) {
+        console.log('[Init] Suppression des attributs physiques');
+        // Retirer l'attribut physics sur la scène s'il y était
+        try { scene.removeAttribute('physics'); } catch(e){}
+        // Supprimer dynamic-body / static-body existants pour éviter erreurs
+        Array.from(document.querySelectorAll('[dynamic-body],[static-body]')).forEach(el=>{
+          el.removeAttribute('dynamic-body');
+          el.removeAttribute('static-body');
+        });
+      } else {
+        // Appliquer physics basique tardivement (après chargement script) si pas en noPhysics
+        window.addEventListener('DOMContentLoaded', ()=>{
+          setTimeout(()=>{ if (!scene.getAttribute('physics')) scene.setAttribute('physics','gravity: -9.81;'); }, 200); });
       }
       // Loader SIMPLE : soit ?weaponglb=MonFichier.glb, soit ?weapon=Nom (=> assets/Nom.glb), sinon pistol.glb
       (function(){
