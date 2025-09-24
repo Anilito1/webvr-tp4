@@ -37,9 +37,7 @@
   <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
 
   <!-- Arme GLB (proche du joueur) -->
-  <a-entity id="gun" class="grabbable" position="0.3 1.4 -0.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" dynamic-body="shape: box; mass: 0.5">
-    <!-- Hitbox/collider for raycaster grabbing (model has no direct geometry on root) -->
-    <a-box class="grabbable gun-hitbox" position="0 0 0" depth="0.32" height="0.14" width="0.38" material="color: #666; opacity: 0.001; transparent: true"></a-box>
+  <a-entity id="gun" class="grabbable" position="0.3 1.4 -0.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" geometry="primitive: box; depth: 0.32; height: 0.14; width: 0.38" material="color: #777; opacity: 0.002; transparent: true" dynamic-body="shape: box; mass: 0.5">
     <a-entity gltf-model="url(./assets/pistol.glb)" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
       </a-entity>
 
@@ -54,12 +52,12 @@
     </a-entity>
 
   <!-- Contrôleur gauche (Quest 3) -->
-  <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .grabbable; far: 10" controller-grab="hand: left; radius: 0.35; useTrigger: false">
+  <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .grabbable; far: 10" controller-grab="hand: left; radius: 0.5; useTrigger: false">
     <a-sphere radius="0.02" color="#66ccff"></a-sphere>
   </a-entity>
 
   <!-- Contrôleur droit (Quest 3) -->
-  <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .grabbable; far: 10" controller-grab="hand: right; radius: 0.35; useTrigger: false">
+  <a-entity id="rightHand" laser-controls="hand: right" raycaster="objects: .grabbable; far: 10" controller-grab="hand: right; radius: 0.5; useTrigger: false">
     <a-sphere radius="0.02" color="#ff9966"></a-sphere>
   </a-entity>
       </a-entity>

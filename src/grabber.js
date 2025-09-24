@@ -22,6 +22,16 @@
   this._grabbables = Array.from(this.el.sceneEl.querySelectorAll('.grabbable'));
   this._lastScan = 0;
   this._scanInterval = 400; // ms between rescan
+  // Ensure gun root is included even if geometry attaches later
+  const gun = document.getElementById('gun');
+  if (gun && !this._grabbables.includes(gun)) this._grabbables.push(gun);
+  this.el.sceneEl.addEventListener('loaded', ()=>{
+    const g2 = document.getElementById('gun');
+    if (g2 && !this._grabbables.includes(g2)) {
+      this._grabbables.push(g2);
+      if (console && console.log) console.log('[Grabber] Gun added after scene load');
+    }
+  });
 
       // Collider helper
       this.sphere = document.createElement('a-sphere');
@@ -56,6 +66,21 @@
       if (this.data.useTrigger) {
         this.el.addEventListener('triggerdown', this._onTrigger);
         this.el.addEventListener('triggerup', this._onTriggerUp);
+      }
+      else {
+        // Even if trigger not used normally, allow emergency near-grab for the gun if extremely close
+        this.el.addEventListener('triggerdown', ()=>{
+          if (this.grabbed) return;
+          const gun = document.getElementById('gun');
+          if (!gun) return;
+          const handPos = this.el.object3D.getWorldPosition(new THREE.Vector3());
+          const gunPos = gun.object3D.getWorldPosition(new THREE.Vector3());
+          if (handPos.distanceTo(gunPos) < 0.25) {
+            // Force selection of gun
+            this._hovered = gun;
+            this.tryGrab();
+          }
+        });
       }
       this.el.addEventListener('squeezestart', this._onGrip);
       this.el.addEventListener('squeezeend', this._onGripUp);
@@ -120,6 +145,12 @@
         }
       }
       if(!best) return;
+
+  // Auto-upgrade hitbox child to its parent gun entity if applicable
+  if (best.classList.contains('gun-hitbox')) {
+    const parentGun = best.closest('#gun');
+    if (parentGun) best = parentGun;
+  }
 
   // Remember original dynamic-body config (if any)
   this.origBody = best.getAttribute('dynamic-body');
