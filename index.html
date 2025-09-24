@@ -19,7 +19,7 @@
     </style>
   </head>
   <body>
-  <div class="hud">Joystick gauche: déplacement | Joystick droit: rotation | Clavier: ZQSD/WASD + souris | Desktop: E prendre/poser, Clic gauche ou F tirer | Score: <span id="score">0</span><br><span id="dbg"></span></div>
+  <div class="hud">VR: Stick G déplacement | Stick D rotation (snap) | Triggers: grab/tirer | Desktop: E prendre/poser, Clic/F tirer | Score: <span id="score">0</span> | Safe: ajouter ?safe=1 si freeze<br><span id="dbg"></span></div>
 
   <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81; broadphase: SAP; allowSleep: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
       <!-- LUMIÈRES -->
@@ -64,6 +64,8 @@
 
       <!-- SKY -->
   <a-sky color="#223"></a-sky>
+  <!-- In-VR floating hints -->
+  <a-entity position="0 2.2 1.2" text="value: Stick G = Move | Stick D = Snap Turn | Grip/Trigger = Grab | Trigger arme = Tirer; align: center; width: 4" rotation="0 180 0"></a-entity>
     </a-scene>
     <script>
       const scene = document.getElementById('scene');

@@ -12,6 +12,13 @@
     init: function(){
       this.slots = this._parseSlots(this.data.slots);
       this.spawnWave = this.spawnWave.bind(this);
+      const params = new URLSearchParams(location.search);
+      const safe = params.get('safe') === '1';
+      if (safe) {
+        // In safe mode, double delay and reduce max per wave for perf
+        this.data.delay *= 2;
+        this.data.maxPerWave = Math.min(2, this.data.maxPerWave);
+      }
       this._timer = setInterval(this.spawnWave, this.data.delay);
       this.spawnWave();
 

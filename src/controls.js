@@ -5,7 +5,13 @@
   AFRAME.registerComponent('thumbstick-move-rotate', {
     schema: {
       moveSpeed: { type: 'number', default: 2.0 },
-      rotateSpeed: { type: 'number', default: 80 } // degrees per second
+      rotateSpeed: { type: 'number', default: 80 }, // smooth yaw deg/s (desktop / fallback)
+      snapTurn: { type: 'boolean', default: true },
+      snapAngle: { type: 'number', default: 30 },
+      snapThreshold: { type: 'number', default: 0.75 },
+      snapCooldown: { type: 'number', default: 250 },
+      pollInterval: { type: 'number', default: 0.1 }, // seconds between gamepad polls
+      debugHud: { type: 'boolean', default: true }
     },
     init: function(){
       this.dir = new THREE.Vector3();
@@ -88,31 +94,40 @@
       // Desktop fallback
       window.addEventListener('keydown', (e)=>{ this.keys[e.code] = true; });
       window.addEventListener('keyup', (e)=>{ this.keys[e.code] = false; });
+      // Safe mode from URL (?safe=1) disables debug HUD to reduce layout thrash
+      const params = new URLSearchParams(location.search);
+      if (params.get('safe') === '1') this.data.debugHud = false;
+      this._snapReady = true;
     },
     tick: function(time, dt){
       const delta = (dt || 0) / 1000;
       if(!delta) return;
-      // Gamepad polling fallback (Quest 3 via WebXR) — throttled and only in VR mode
+      // Gamepad polling (Quest / OpenXR / emulate) — always active so movement fonctionne même si flag VR delay
       this._pollTimer += delta;
-      const scene = this.el.sceneEl;
-      const inVR = scene && scene.is('vr-mode');
-      if (inVR && this._gpPoll && this._pollTimer >= 0.05 && navigator.getGamepads) {
+      if (this._gpPoll && this._pollTimer >= this.data.pollInterval && navigator.getGamepads) {
         this._pollTimer = 0;
         const pads = navigator.getGamepads();
+        let detected = false;
         for (let i = 0; i < pads.length; i++) {
           const gp = pads[i];
-          if (!gp || !gp.connected) continue;
-          const id = (gp.id || '').toLowerCase();
-          if (id.includes('oculus') || id.includes('quest') || id.includes('meta')) {
-            const ax = gp.axes || [];
-            if (ax.length >= 2) {
-              this.leftAxis = { x: ax[0] || 0, y: ax[1] || 0 };
+            if (!gp || !gp.connected) continue;
+            const id = (gp.id || '').toLowerCase();
+            if (id.includes('oculus') || id.includes('quest') || id.includes('meta') || id.includes('openxr') || id.includes('touch')) {
+              const ax = gp.axes || [];
+              if (ax.length >= 4) { // Standard layout LX,LY,RX,RY
+                this.leftAxis = { x: ax[0] || 0, y: ax[1] || 0 };
+                this.rightAxis = { x: ax[2] || 0, y: ax[3] || 0 };
+                detected = true;
+              } else if (ax.length >= 2) {
+                this.leftAxis = { x: ax[0] || 0, y: ax[1] || 0 };
+                detected = true;
+              }
             }
-            if (ax.length >= 3) {
-              // Try index 2, fallback index 3
-              const rx = (typeof ax[2] === 'number') ? ax[2] : (ax[3] || 0);
-              this.rightAxis = { x: rx || 0, y: this.rightAxis.y || 0 };
-            }
+        }
+        if (!detected) {
+          this._noAxesWarn = (this._noAxesWarn || 0) + 1;
+          if (this.dbg && this._noAxesWarn % 20 === 0) {
+            this.dbg.textContent = (this.dbg.textContent + ' | Aucun axe détecté (bouge les sticks)').trim();
           }
         }
       }
@@ -153,7 +168,7 @@
 
       // Throttle HUD updates
       this._dbgTimer += delta;
-      if (this.dbg && this._dbgTimer >= 0.1) {
+      if (this.data.debugHud && this.dbg && this._dbgTimer >= 0.1) {
         this._dbgTimer = 0;
         const c = this.eventCounts;
         this.dbg.textContent = `L(${moveX.toFixed(2)},${(-moveY).toFixed(2)}) R(${rotX.toFixed(2)}) yaw=${this.yaw.toFixed(2)} | evts L:${c.left} R:${c.right} conn L:${c.connL} R:${c.connR}`;
@@ -168,9 +183,20 @@
       if(this.keys['ArrowRight']) rotX = 1;
 
       // Rotation
-  const rotDelta = THREE.MathUtils.degToRad(this.data.rotateSpeed) * rotX * delta;
-      this.yaw = (this.yaw + rotDelta) % TWO_PI;
-      rig.object3D.rotation.y = this.yaw;
+      // Snap-turn (VR) OR smooth rotation (desktop or when below threshold)
+      if (this.data.snapTurn && Math.abs(rotX) >= this.data.snapThreshold) {
+        if (this._snapReady) {
+          const dir = rotX > 0 ? 1 : -1;
+          this.yaw = (this.yaw + THREE.MathUtils.degToRad(this.data.snapAngle * dir)) % TWO_PI;
+          rig.object3D.rotation.y = this.yaw;
+          this._snapReady = false;
+          setTimeout(()=>{ this._snapReady = true; }, this.data.snapCooldown);
+        }
+      } else {
+        const rotDelta = THREE.MathUtils.degToRad(this.data.rotateSpeed) * rotX * delta;
+        this.yaw = (this.yaw + rotDelta) % TWO_PI;
+        rig.object3D.rotation.y = this.yaw;
+      }
 
       // Movement is relative to facing direction (head yaw)
       const facing = headRot ? headRot.y + this.yaw : rig.object3D.rotation.y;
