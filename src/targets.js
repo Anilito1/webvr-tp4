@@ -49,7 +49,7 @@
       for (let i=0;i<n;i++){
         const pos = this.slots[i];
         const t = document.createElement('a-entity');
-        t.setAttribute('class', 'target');
+  t.setAttribute('class', 'target grabbable');
         t.setAttribute('position', `${pos.x} ${pos.y} ${pos.z}`);
         // Build geometry on the same entity so physics sees the mesh
         if (i % 2 === 0){
@@ -59,8 +59,8 @@
           t.setAttribute('geometry', 'primitive: cone; height: 0.7; radiusBottom: 0.3; radiusTop: 0');
           t.setAttribute('material', 'color: #33aa33');
         }
-        t.setAttribute('shadow', 'cast: true; receive: true');
-        t.setAttribute('static-body', 'shape: box');
+  t.setAttribute('shadow', 'cast: true; receive: true');
+  t.setAttribute('dynamic-body', 'shape: box; mass: 0.6; linearDamping:0.02; angularDamping:0.02');
         t.setAttribute('target-hit', '');
         this.el.appendChild(t);
       }

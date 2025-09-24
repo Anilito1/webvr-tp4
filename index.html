@@ -32,8 +32,8 @@
 
       <!-- OBJETS 3D -->
   <!-- Cibles fixes supplémentaires: carré et rond du début -->
-  <a-box id="cube" class="target" position="-3 1.2 -6" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" static-body="shape: box" target-hit></a-box>
-  <a-sphere id="sphere" class="target" position="3 1.75 -6" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" static-body="shape: sphere" target-hit></a-sphere>
+  <a-box id="cube" class="target grabbable" position="-3 1.2 -6" depth="1" height="1" width="1" color="#4CC3D9" material="metalness: 0.1; roughness: 0.7" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1" target-hit></a-box>
+  <a-sphere id="sphere" class="target grabbable" position="3 1.75 -6" radius="1.25" color="#EF2D5E" material="metalness: 0.2; roughness: 0.5" shadow="cast: true; receive: true" dynamic-body="shape: sphere; mass: 1.5" target-hit></a-sphere>
   <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
 
   <!-- Arme GLB (proche du joueur) -->
