@@ -100,7 +100,8 @@
       // 2. Else ?weapon=Name (no extension) -> look for assets/Name.glb etc.
       // 3. Fallbacks: try parent directory (../Name.glb) so user can drop file beside project folder.
       // 4. Final fallback: pistol.glb
-      let weaponName = params.get('weapon') || 'AK47';
+  // Par défaut on revient au pistolet d'origine
+  let weaponName = params.get('weapon') || 'pistol';
       const weaponFileParam = params.get('weaponglb');
       (function(){
         const gm = document.getElementById('gunModel');
@@ -137,6 +138,9 @@
         let attemptIndex = 0;
   let lastAttemptPath = null;
         console.log('[Weapon] Candidates:', finalList);
+        if (!weaponFileParam && params.get('weapon')==null && weaponName==='pistol') {
+          try { const dbg=document.getElementById('dbg'); if(dbg) dbg.textContent=(dbg.textContent+' | Arme par défaut: pistol').trim(); } catch(e){}
+        }
         const applyInitialScale = ()=>{
           const ref = weaponFileParam || weaponName;
             if (weaponFileParam && !longPattern.test(ref) && !pistolPattern.test(ref)) return; // keep default
