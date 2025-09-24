@@ -15,6 +15,7 @@
       const params = new URLSearchParams(location.search);
       const safe = params.get('safe') === '1';
       const lite = params.get('lite') === '1';
+      const perf = params.get('perf') === '1';
       this._disabled = lite; // full disable if lite mode
       this.slotEntities = new Array(this.slots.length).fill(null);
       this._spawnedCount = 0;
@@ -22,6 +23,12 @@
         // In safe mode, double delay and reduce max per wave for perf
         this.data.delay *= 2;
         this.data.maxPerWave = Math.min(2, this.data.maxPerWave);
+      }
+      if (perf) {
+        // Ultra performance: only 1 target active and slower spawn
+        this.data.delay *= 3;
+        this.data.maxPerWave = 1;
+        this._perfStaticTargets = true; // force static-body for spawned targets
       }
       if (!this._disabled) {
         this._timer = setInterval(this.spawnWave, this.data.delay);
@@ -71,7 +78,11 @@
           t.setAttribute('material', 'color: #33aa33');
         }
         t.setAttribute('shadow', 'cast: true; receive: true');
-        t.setAttribute('dynamic-body', 'shape: box; mass: 0.6; linearDamping:0.02; angularDamping:0.02');
+        if (this._perfStaticTargets) {
+          t.setAttribute('static-body', 'shape: box');
+        } else {
+          t.setAttribute('dynamic-body', 'shape: box; mass: 0.6; linearDamping:0.02; angularDamping:0.02');
+        }
         t.dataset.slotIndex = i;
         t.setAttribute('target-hit', '');
         this.el.appendChild(t);

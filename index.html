@@ -74,6 +74,7 @@
       const params = new URLSearchParams(location.search);
       const safe = params.get('safe') === '1';
       const debug = params.get('debug') === '1';
+      const perf = params.get('perf') === '1';
       if (safe) {
         // Disable heavy effects in safe mode
         scene.setAttribute('fog', 'enabled: false');
@@ -82,6 +83,13 @@
         if (dl) dl.setAttribute('light', 'castShadow: false');
         const dbg = document.getElementById('dbg');
         if (dbg) dbg.style.display = 'none';
+      }
+      if (perf) {
+        // Extreme perf mode: remove shadows & lower pixel ratio
+        scene.renderer && (scene.renderer.setPixelRatio(0.7));
+        const dl = document.getElementById('dirLight');
+        if (dl) dl.setAttribute('light', 'intensity: 0.8; castShadow: false');
+        console.log('[Perf] mode actif');
       }
       if (debug) {
         const gun = document.getElementById('gun');
@@ -102,6 +110,24 @@
       scene.addEventListener('loaded', ()=>{
         console.log('[Scene] loaded');
       });
+      // Simple frame stall watchdog: if no RAF for >1200ms, show alert tip once
+      (function(){
+        let last = performance.now();
+        let warned = false;
+        function tick(){
+          const now = performance.now();
+            const gap = now - last;
+            if (!warned && gap > 1200) {
+              warned = true;
+              console.warn('[Watchdog] Long frame gap ('+Math.round(gap)+'ms). Essayez ?safe=1 ou ?perf=1 ou ?lite=1');
+              const hud = document.getElementById('dbg');
+              if (hud) hud.textContent = (hud.textContent + ' | Lag détecté: utiliser ?safe=1 ou ?perf=1').trim();
+            }
+          last = now;
+          requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+      })();
     </script>
   </body>
 </html>
