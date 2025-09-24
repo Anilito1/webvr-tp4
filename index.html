@@ -112,8 +112,9 @@
         placeholder.setAttribute('scale','1 1 1');
         gm.parentNode.insertBefore(placeholder, gm);
         let appliedAutoScale = false;
-        const longPattern = /m4|ak|rifle|scar|awp|shotgun|vector|mp5|mp7|lever|hunting/i;
-        const pistolPattern = /1911|usp|ruger|pistol|handgun/i;
+  const longPattern = /m4|ak\b|rifle|scar|awp|shotgun|vector|mp5|mp7|lever|hunting/i;
+  // Added lowpoly & revolver keywords so files named "Pistol Low poly" are treated as pistolets
+  const pistolPattern = /1911|usp|ruger|pistol|handgun|revolver|low ?poly/i;
         // Build candidate paths list
         const baseFromParam = weaponFileParam ? weaponFileParam : weaponName + '.glb';
         // Normalize .glm (non-standard) → treat as .glb while keeping original first attempt
