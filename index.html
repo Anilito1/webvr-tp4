@@ -77,7 +77,8 @@
       const params = new URLSearchParams(location.search);
       const safe = params.get('safe') === '1';
       const debug = params.get('debug') === '1';
-      const perf = params.get('perf') === '1';
+  const perf = params.get('perf') === '1';
+  const noAutoPick = params.get('noautopick') === '1';
   const muzzleParam = params.get('muzzle'); // format: x,y,z or x y z
       if (safe) {
         // Disable heavy effects in safe mode
@@ -174,7 +175,10 @@
           gm.setAttribute('gltf-model','url(' + path + ')');
         };
         gm.addEventListener('model-loaded', ()=>{
-          if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+          // Petite temporisation pour éviter effet flash (apparition/disparition)
+          if (placeholder && placeholder.parentNode) {
+            setTimeout(()=>{ if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder); }, 150);
+          }
           const obj = gm.getObject3D('mesh');
           if (obj) {
             const box = new THREE.Box3().setFromObject(obj);
@@ -196,6 +200,7 @@
           try {
             const dbg = document.getElementById('dbg');
             if (dbg && lastAttemptPath) dbg.textContent = (dbg.textContent + ' | Arme chargée: ' + lastAttemptPath.replace(/.*\\/,'')).trim();
+            if (noAutoPick) dbg.textContent = (dbg.textContent + ' | autoPick désactivé').trim();
           } catch(e){}
           // Manual muzzle override if provided
           if (muzzleParam) {

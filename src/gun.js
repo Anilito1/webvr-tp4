@@ -21,6 +21,8 @@
       debug: { type: 'boolean', default: false }
     },
     init: function(){
+      // Lire paramètre URL pour désactiver auto pick desktop
+      try { const p = new URLSearchParams(location.search); this._disableAutoDesktop = (p.get('noautopick') === '1'); } catch(e){ this._disableAutoDesktop=false; }
       this.holdingHand = null;
       this.desktopHeld = false;
       this._savedDyn = null;
@@ -105,10 +107,10 @@
       setTimeout(()=>{
         const scene = this.el.sceneEl;
         const inVR = scene && scene.is('vr-mode');
-        if (!inVR && this.data.autoDesktopPickup && !this.desktopHeld) {
+        if (!inVR && !this._disableAutoDesktop && this.data.autoDesktopPickup && !this.desktopHeld) {
           this._desktopTryPickup(this.data.autoPickupDistance);
         }
-      }, 300);
+      }, 450);
 
       // Firing sound element (lightweight, reused)
       this._fireSound = document.createElement('audio');
