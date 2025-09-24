@@ -79,9 +79,6 @@
       const debug = params.get('debug') === '1';
   const perf = params.get('perf') === '1';
   const noAutoPick = params.get('noautopick') === '1';
-  const gunDebug = params.get('gundebug') === '1';
-  const showGun = params.get('showgun') === '1' || gunDebug;
-  const lockGun = params.get('lockgun') === '1';
   const muzzleParam = params.get('muzzle'); // format: x,y,z or x y z
       if (safe) {
         // Disable heavy effects in safe mode
@@ -99,190 +96,42 @@
         if (dl) dl.setAttribute('light', 'intensity: 0.8; castShadow: false');
         console.log('[Perf] mode actif');
       }
-      // Dynamic weapon loading strategy:
-      // 1. ?weaponglb=ExactFile (e.g. myGun.glb or even myGun.glm -> we try alternatives)
-      // 2. Else ?weapon=Name (no extension) -> look for assets/Name.glb etc.
-      // 3. Fallbacks: try parent directory (../Name.glb) so user can drop file beside project folder.
-      // 4. Final fallback: pistol.glb
-  // Par défaut on revient au pistolet d'origine
-  let weaponName = params.get('weapon') || 'pistol';
-      const weaponFileParam = params.get('weaponglb');
+      // Loader SIMPLE : soit ?weaponglb=MonFichier.glb, soit ?weapon=Nom (=> assets/Nom.glb), sinon pistol.glb
       (function(){
-        const gm = document.getElementById('gunModel');
-        if (!gm) return;
-        const placeholder = document.createElement('a-entity');
-        placeholder.setAttribute('geometry','primitive: box; depth: 0.25; height: 0.12; width: 0.32');
-        placeholder.setAttribute('material','color: #ffcc00; emissive: #664400; emissiveIntensity: 0.4; wireframe: false');
-        placeholder.setAttribute('position','0 0 0');
-        placeholder.setAttribute('scale','1 1 1');
-        gm.parentNode.insertBefore(placeholder, gm);
-        let appliedAutoScale = false;
-  const longPattern = /m4|ak\b|rifle|scar|awp|shotgun|vector|mp5|mp7|lever|hunting/i;
-  // Added lowpoly & revolver keywords so files named "Pistol Low poly" are treated as pistolets
-  const pistolPattern = /1911|usp|ruger|pistol|handgun|revolver|low ?poly/i;
-        // Build candidate paths list
-        const baseFromParam = weaponFileParam ? weaponFileParam : weaponName + '.glb';
-        // Normalize .glm (non-standard) → treat as .glb while keeping original first attempt
-        const isGLM = /\.glm$/i.test(baseFromParam);
-        const baseNoExt = baseFromParam.replace(/\.(glb|gltf|glm)$/i,'');
-        const candidates = [];
-        if (weaponFileParam) {
-          candidates.push('./assets/' + baseFromParam); // user explicit file in assets first
-          if (isGLM) candidates.push('./assets/' + baseNoExt + '.glb');
-        } else {
-          candidates.push('./assets/' + weaponName + '.glb');
-          candidates.push('./assets/' + weaponName + '.gltf');
+        const gm = document.getElementById('gunModel'); if(!gm) return;
+        const direct = params.get('weaponglb');
+        const named = params.get('weapon');
+        let path = './assets/pistol.glb';
+        if (direct) path = './assets/' + direct;
+        else if (named) path = './assets/' + named + '.glb';
+        gm.setAttribute('gltf-model', path);
+        console.log('[Weapon] Loading simple path', path);
+        if (noAutoPick) { try { const dbg=document.getElementById('dbg'); if(dbg) dbg.textContent=(dbg.textContent+' | autoPick off').trim(); } catch(e){} }
+        if (muzzleParam) {
+          const parts = muzzleParam.split(/[;, ]+/).map(parseFloat).filter(n=>!isNaN(n));
+          if (parts.length===3) {
+            const gunEnt=document.getElementById('gun');
+            if (gunEnt) gunEnt.setAttribute('vr-gun', 'muzzleOffset: '+parts.join(' '));
+          }
         }
-        // Parent folder fallbacks (user dropped file outside project)
-        candidates.push('../' + baseNoExt + '.glb');
-        candidates.push('../' + baseNoExt + '.gltf');
-        // De-dupe while preserving order
-        const seen = new Set();
-  const finalList = candidates.filter(p=>{ if (seen.has(p)) return false; seen.add(p); return true; });
-        let attemptIndex = 0;
-  let lastAttemptPath = null;
-        console.log('[Weapon] Candidates:', finalList);
-        if (!weaponFileParam && params.get('weapon')==null && weaponName==='pistol') {
-          try { const dbg=document.getElementById('dbg'); if(dbg) dbg.textContent=(dbg.textContent+' | Arme par défaut: pistol').trim(); } catch(e){}
-        }
-        const applyInitialScale = ()=>{
-          const ref = weaponFileParam || weaponName;
-            if (weaponFileParam && !longPattern.test(ref) && !pistolPattern.test(ref)) return; // keep default
-            if (longPattern.test(ref)) {
-              gm.setAttribute('scale','0.4 0.4 0.4');
-              gm.setAttribute('position','0 0.02 0');
-            } else if (pistolPattern.test(ref)) {
-              gm.setAttribute('scale','0.75 0.75 0.75');
-              gm.removeAttribute('position');
-            } else {
-              gm.setAttribute('scale','0.55 0.55 0.55');
-            }
-        };
-        applyInitialScale();
-        const loadNext = ()=>{
-          if (attemptIndex >= finalList.length) {
-            console.warn('[Weapon] All candidates failed, fallback to pistol.glb');
-            gm.setAttribute('gltf-model','./assets/pistol.glb');
-            gm.setAttribute('scale','0.75 0.75 0.75');
-            if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
-            // HUD warning visible to user
-            try {
-              const dbg = document.getElementById('dbg');
-              if (dbg) dbg.textContent = (dbg.textContent + ' | Arme non trouvée: place gun.glb dans assets/ et utilise ?weaponglb=gun.glb').trim();
-            } catch(e){}
-            return;
-          }
-          const path = finalList[attemptIndex++];
-          lastAttemptPath = path;
-          console.log('[Weapon] Loading', path);
-          gm.setAttribute('gltf-model', path);
-        };
-        gm.addEventListener('model-loaded', ()=>{
-          // Petite temporisation pour éviter effet flash (apparition/disparition)
-          if (placeholder && placeholder.parentNode) {
-            setTimeout(()=>{ if (placeholder.parentNode) placeholder.parentNode.removeChild(placeholder); }, 150);
-          }
-          const obj = gm.getObject3D('mesh');
-          if (obj) {
-            const box = new THREE.Box3().setFromObject(obj);
-            if (!box.isEmpty()) {
-              const size = new THREE.Vector3(); box.getSize(size);
-              const maxDim = Math.max(size.x,size.y,size.z);
-              const ref = weaponFileParam || weaponName;
-              let target = 0.9;
-              if (pistolPattern.test(ref)) target = 0.35;
-              if (maxDim > 0 && maxDim < 10) {
-                const s = target / maxDim;
-                gm.setAttribute('scale', `${s} ${s} ${s}`);
-                appliedAutoScale = true;
-                console.log('[Weapon] Auto-scale factor', s.toFixed(3));
-              }
-                if (gunDebug) {
-                  console.log('[Weapon][Debug] Box size', size, 'scale', gm.getAttribute('scale'));
-                  // Add wireframe bbox helper entity
-                  try {
-                    const wf = document.createElement('a-entity');
-                    wf.setAttribute('geometry', `primitive: box; width: ${size.x.toFixed(3)}; height: ${size.y.toFixed(3)}; depth: ${size.z.toFixed(3)}`);
-                    const center = new THREE.Vector3(); box.getCenter(center);
-                    wf.setAttribute('position', `${center.x} ${center.y} ${center.z}`);
-                    wf.setAttribute('material', 'color: #00ffcc; wireframe: true; opacity: 0.6');
-                    gm.appendChild(wf);
-                  } catch(e){}
-                }
-            }
-          }
-          // HUD success + file name
-          try {
-            const dbg = document.getElementById('dbg');
-            if (dbg && lastAttemptPath) dbg.textContent = (dbg.textContent + ' | Arme chargée: ' + lastAttemptPath.replace(/.*\\/,'')).trim();
-            if (noAutoPick) dbg.textContent = (dbg.textContent + ' | autoPick désactivé').trim();
-              if (gunDebug) dbg.textContent = (dbg.textContent + ' | debug ON').trim();
-          } catch(e){}
-          // Manual muzzle override if provided
-          if (muzzleParam) {
-            const parts = muzzleParam.split(/[;, ]+/).map(parseFloat).filter(n=>!isNaN(n));
-            if (parts.length === 3) {
-              const gunEnt = document.getElementById('gun');
-              if (gunEnt) {
-                gunEnt.setAttribute('vr-gun', 'muzzleOffset', parts[0] + ' ' + parts[1] + ' ' + parts[2]);
-                console.log('[Weapon] Muzzle override via ?muzzle=', parts);
-                try { const dbg = document.getElementById('dbg'); if (dbg) dbg.textContent = (dbg.textContent + ' | muzzle=' + parts.join(',')); } catch(e){}
-              }
-            } else {
-              console.warn('[Weapon] Param ?muzzle= invalide. Utilise ?muzzle=x,y,z');
-            }
-          }
-        });
         gm.addEventListener('model-error', ()=>{
-          console.warn('[Weapon] model-error, trying next fallback');
-          loadNext();
+          console.warn('[Weapon] model-error → fallback pistol.glb');
+          gm.setAttribute('gltf-model','./assets/pistol.glb');
         });
-        setTimeout(()=>{
-          if (placeholder && placeholder.parentNode) {
-            placeholder.setAttribute('material','color: #ff0000; emissive: #550000; emissiveIntensity: 0.6');
-            console.warn('[Weapon] Toujours pas chargé après 3s. Vérifie que le fichier est présent (assets/ ou parent) & extension (.glb).');
-          }
-        }, 3000);
-        loadNext();
       })();
       // Relocate gun near player if spawned too far (e.g., missing model place)
+      // Reposition simple si loin du joueur (cas rares)
       scene.addEventListener('loaded', ()=>{
-        const gun = document.getElementById('gun');
-        const head = document.getElementById('head');
-        if (gun && head) {
-          const gp = gun.object3D.getWorldPosition(new THREE.Vector3());
-          const hp = head.object3D.getWorldPosition(new THREE.Vector3());
-          if (gp.distanceTo(hp) > 2.5) {
-            const forward = new THREE.Vector3(0,0,-1).applyQuaternion(head.object3D.getWorldQuaternion(new THREE.Quaternion()));
-            const target = hp.clone().add(forward.multiplyScalar(0.5));
-            target.y -= 0.15;
-            gun.setAttribute('position', `${target.x} ${target.y} ${target.z}`);
-            console.log('[Weapon] Reposition automatique près du joueur');
-          }
-          if (showGun) {
-            try { gun.setAttribute('material','color: #ff22aa; opacity: 0.25; transparent: true'); } catch(e){}
-          }
-          if (lockGun) {
-            try { gun.removeAttribute('dynamic-body'); gun.setAttribute('kinematic-body',''); console.log('[Weapon][Debug] lockgun actif'); } catch(e){}
-          }
+        const gun=document.getElementById('gun'); const head=document.getElementById('head');
+        if(!gun||!head) return;
+        const gp=gun.object3D.getWorldPosition(new THREE.Vector3());
+        const hp=head.object3D.getWorldPosition(new THREE.Vector3());
+        if(gp.distanceTo(hp)>2.5){
+          const forward=new THREE.Vector3(0,0,-1).applyQuaternion(head.object3D.getWorldQuaternion(new THREE.Quaternion()));
+          const target=hp.clone().add(forward.multiplyScalar(0.5)); target.y-=0.15;
+          gun.setAttribute('position',`${target.x} ${target.y} ${target.z}`);
         }
       });
-      if (gunDebug) {
-        // Poll visibility a few frames
-        let frames=0;
-        const gun = document.getElementById('gun');
-        function visCheck(){
-          frames++;
-          if (gun) {
-            const obj = gun.object3D;
-            if (!obj) return requestAnimationFrame(visCheck);
-            const p = obj.getWorldPosition(new THREE.Vector3());
-            if (frames<120) requestAnimationFrame(visCheck);
-            console.log('[Weapon][Debug] frame', frames,'worldPos', p.x.toFixed(2), p.y.toFixed(2), p.z.toFixed(2));
-          }
-        }
-        requestAnimationFrame(visCheck);
-      }
       if (debug) {
         const gun = document.getElementById('gun');
         if (gun) {
