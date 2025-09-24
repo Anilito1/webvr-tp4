@@ -71,6 +71,12 @@
           // Play hit sound
           const a = document.getElementById('hitSound');
           if (a){ a.currentTime = 0; a.volume = 0.8; a.play().catch(()=>{}); }
+          // Score
+          const scoreEl = document.getElementById('score');
+          if (scoreEl){
+            const v = parseInt(scoreEl.textContent||'0',10)+1;
+            scoreEl.textContent = v;
+          }
           // Remove target
           const t = this.el;
           setTimeout(()=>{ t.parentNode && t.parentNode.removeChild(t); }, 10);

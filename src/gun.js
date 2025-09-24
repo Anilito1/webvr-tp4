@@ -91,6 +91,20 @@
           this._desktopTryPickup(this.data.autoPickupDistance);
         }
       }, 300);
+
+      // Firing sound element (lightweight, reused)
+      this._fireSound = document.createElement('audio');
+      this._fireSound.src = 'https://actions.google.com/sounds/v1/impacts/wood_plank_flicks.ogg';
+      this._fireSound.preload = 'auto';
+      this._fireSound.volume = 0.4;
+      document.body.appendChild(this._fireSound);
+
+      // Reticle hide/show depending on VR
+      const sceneEl = this.el.sceneEl;
+      if (sceneEl){
+        sceneEl.addEventListener('enter-vr', ()=>{ const r=document.getElementById('reticle'); if(r) r.setAttribute('visible','false'); });
+        sceneEl.addEventListener('exit-vr', ()=>{ const r=document.getElementById('reticle'); if(r) r.setAttribute('visible','true'); });
+      }
     },
     _hudFire: function(){
       const dbg = document.getElementById('dbg');
@@ -106,6 +120,7 @@
       window.removeEventListener('keydown', this._onKeyDown);
       window.removeEventListener('mousedown', this._onMouseDown);
       window.removeEventListener('keydown', this._onKeyFire);
+      if (this._fireSound && this._fireSound.parentNode) this._fireSound.parentNode.removeChild(this._fireSound);
     },
     _getHead: function(){
       // Prefer #head if present, else scene camera entity
@@ -224,6 +239,7 @@
   const sceneRoot2 = this.el.sceneEl || document.querySelector('a-scene');
   sceneRoot2.appendChild(flash);
       setTimeout(()=>{ if (flash && flash.parentNode) flash.parentNode.removeChild(flash); }, 80);
+      if (this._fireSound){ try { this._fireSound.currentTime = 0; this._fireSound.play().catch(()=>{});} catch(e){} }
     }
   });
 })();

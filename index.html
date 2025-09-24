@@ -19,7 +19,7 @@
     </style>
   </head>
   <body>
-  <div class="hud">Joystick gauche: déplacement | Joystick droit: rotation | Clavier: ZQSD/WASD + souris | Desktop: E prendre/poser, Clic gauche tirer<br><span id="dbg"></span></div>
+  <div class="hud">Joystick gauche: déplacement | Joystick droit: rotation | Clavier: ZQSD/WASD + souris | Desktop: E prendre/poser, Clic gauche ou F tirer | Score: <span id="score">0</span><br><span id="dbg"></span></div>
 
   <a-scene id="scene" renderer="antialias: true; shadowMap.enabled: true; physicallyCorrectLights: true; colorManagement: true" physics="gravity: -9.81; broadphase: SAP; allowSleep: true" webxr="optionalFeatures: local-floor, bounded-floor" background="color: #202630">
       <!-- LUMIÈRES -->
@@ -46,10 +46,10 @@
 
   <!-- RIG + CAMÉRA + CONTRÔLEURS -->
   <a-entity id="rig" position="0 1.6 3" thumbstick-move-rotate>
-  <a-entity id="head" position="0 0 0" camera="near: 0.01" look-controls="pointerLockEnabled: false" wasd-controls-enabled="false">
-    <!-- Simple reticle for desktop aiming (tiny white dot) -->
-    <a-entity position="0 0 -1" geometry="primitive: ring; radiusInner: 0.002; radiusOuter: 0.004" material="color: #fff; shader: flat; side: double; opacity: 0.85"></a-entity>
-  </a-entity>
+    <a-entity id="head" position="0 0 0" camera="near: 0.01" look-controls="pointerLockEnabled: false" wasd-controls-enabled="false">
+      <!-- Simple reticle for desktop aiming (tiny white ring) -->
+      <a-entity id="reticle" position="0 0 -1" geometry="primitive: ring; radiusInner: 0.002; radiusOuter: 0.004" material="color: #fff; shader: flat; side: double; opacity: 0.85"></a-entity>
+    </a-entity>
 
   <!-- Contrôleur gauche (Quest 3) -->
   <a-entity id="leftHand" laser-controls="hand: left" raycaster="objects: .grabbable; far: 10" controller-grab="hand: left; radius: 0.35">
