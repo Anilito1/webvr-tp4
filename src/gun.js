@@ -17,7 +17,8 @@
   desktopHoldOffset: { type: 'vec3', default: {x: 0.22, y: -0.14, z: -0.5} },
       desktopHoldRotation: { type: 'vec3', default: {x: 0, y: 0, z: 0} },
       autoDesktopPickup: { type: 'boolean', default: true },
-      autoPickupDistance: { type: 'number', default: 3.0 }
+      autoPickupDistance: { type: 'number', default: 3.0 },
+      debug: { type: 'boolean', default: false }
     },
     init: function(){
       this.holdingHand = null;
@@ -25,18 +26,27 @@
       this._savedDyn = null;
       this._prevParent = null;
       this._onTriggerDown = ()=> this.fire();
+      this._onGripDown = ()=> this.fire(); // fallback if trigger events absent
+      this._onSqueeze = ()=> this.fire();
       this._onGrabStart = (e)=>{
         this.holdingHand = e.detail && e.detail.handEl;
         if (this.holdingHand){
+          if (this.data.debug) console.log('[Gun] grab-start from', this.holdingHand.id || this.holdingHand.tagName);
           this.holdingHand.addEventListener('triggerdown', this._onTriggerDown);
           this.holdingHand.addEventListener('selectstart', this._onTriggerDown);
+          // Fallback bindings
+          this.holdingHand.addEventListener('gripdown', this._onGripDown);
+          this.holdingHand.addEventListener('squeezestart', this._onSqueeze);
         }
       };
       this._onGrabEnd = (e)=>{
         if (this.holdingHand){
           this.holdingHand.removeEventListener('triggerdown', this._onTriggerDown);
           this.holdingHand.removeEventListener('selectstart', this._onTriggerDown);
+          this.holdingHand.removeEventListener('gripdown', this._onGripDown);
+          this.holdingHand.removeEventListener('squeezestart', this._onSqueeze);
         }
+        if (this.data.debug) console.log('[Gun] grab-end');
         this.holdingHand = null;
       };
       this.el.addEventListener('grab-start', this._onGrabStart);
@@ -212,6 +222,7 @@
         // Not currently held; ignore to avoid accidental shots
         return;
       }
+      if (this.data.debug) console.log('[Gun] FIRE (inVR=' + inVR + ', desktopHeld=' + this.desktopHeld + ')');
       // Muzzle world pose
       const obj = this.el.object3D;
       const muzzleLocal = new THREE.Vector3(this.data.muzzleOffset.x, this.data.muzzleOffset.y, this.data.muzzleOffset.z);
@@ -233,6 +244,17 @@
       p.addEventListener('body-loaded', ()=>{
         try { p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed); } catch(e){}
       });
+      // Fallback re-apply velocity shortly after spawn (some browsers delay body-loaded)
+      setTimeout(()=>{
+        if (p.body && p.body.velocity && p.body.velocity.almostZero && p.body.velocity.lengthSquared && p.body.velocity.lengthSquared() < 0.01) {
+          try { p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed); } catch(e){}
+        } else if (p.body && p.body.velocity) {
+          // If zero length by manual inspection
+          if (Math.abs(p.body.velocity.x)+Math.abs(p.body.velocity.y)+Math.abs(p.body.velocity.z) < 0.0001) {
+            try { p.body.velocity.set(dir.x * speed, dir.y * speed, dir.z * speed); } catch(e){}
+          }
+        }
+      }, 120);
 
       // Cleanup after life
       setTimeout(()=>{ if (p && p.parentNode) p.parentNode.removeChild(p); }, this.data.life * 1000);

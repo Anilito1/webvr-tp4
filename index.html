@@ -37,7 +37,7 @@
   <a-cylinder class="grabbable" position="0 2.0 -6" radius="0.5" height="1.5" color="#FFC65D" material="metalness: 0.3; roughness: 0.6" shadow="cast: true; receive: true" dynamic-body="shape: box; mass: 1; linearDamping: 0.01; angularDamping: 0.01"></a-cylinder>
 
   <!-- Arme GLB (proche du joueur) -->
-  <a-entity id="gun" class="grabbable" position="0.3 1.4 -0.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12" dynamic-body="shape: box; mass: 0.5">
+  <a-entity id="gun" class="grabbable" position="0.3 1.4 -0.6" vr-gun="muzzleOffset: 0 0 -0.35; speed: 12; debug: false" dynamic-body="shape: box; mass: 0.5">
     <a-entity gltf-model="url(./assets/pistol.glb)" scale="0.75 0.75 0.75" rotation="0 90 0"></a-entity>
       </a-entity>
 
@@ -71,6 +71,7 @@
       const scene = document.getElementById('scene');
       const params = new URLSearchParams(location.search);
       const safe = params.get('safe') === '1';
+      const debug = params.get('debug') === '1';
       if (safe) {
         // Disable heavy effects in safe mode
         scene.setAttribute('fog', 'enabled: false');
@@ -79,6 +80,19 @@
         if (dl) dl.setAttribute('light', 'castShadow: false');
         const dbg = document.getElementById('dbg');
         if (dbg) dbg.style.display = 'none';
+      }
+      if (debug) {
+        const gun = document.getElementById('gun');
+        if (gun) {
+          const v = gun.getAttribute('vr-gun') || {};
+          gun.setAttribute('vr-gun', Object.entries(v).map(([k,val])=>`${k}: ${val}`).join('; ') + '; debug: true');
+        }
+        const right = document.getElementById('rightHand');
+        if (right) {
+          ['triggerdown','gripdown','squeezestart','selectstart'].forEach(ev=>{
+            right.addEventListener(ev, ()=>console.log('[RightHand event]', ev));
+          });
+        }
       }
       scene.addEventListener('enter-vr', ()=>{
         console.log('[VR] enter-vr');
